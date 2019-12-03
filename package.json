@@ -1,6 +1,6 @@
 {
   "name": "tile-stencil",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Load a Mapbox style document and parse it into Javascript functions",
   "main": "dist/tile-stencil.bundle.js",
   "module": "dist/tile-stencil.bundle.js",
