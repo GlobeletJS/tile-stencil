@@ -8,8 +8,8 @@ import { layoutDefaults, paintDefaults } from "./defaults.js";
 export function parseLayer(layer) {
   // NOTE: modifies input layer!
   layer.filter = buildFeatureFilter(layer.filter);
-  layer.layout = autoGetters(layer.layout, layoutDefaults(layer.type));
-  layer.paint  = autoGetters(layer.paint,  paintDefaults(layer.type) );
+  layer.layout = autoGetters(layer.layout, layoutDefaults[layer.type]);
+  layer.paint  = autoGetters(layer.paint,  paintDefaults[layer.type] );
   return layer;
 }
 

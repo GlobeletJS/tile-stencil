@@ -4,8 +4,8 @@ Load a Mapbox style document and parse it into Javascript functions
 
 [Mapbox style documents] describe how a map should be drawn. The document
 begins with input information, such as:
-- [Data sources] to be used: tiles, GeoJSON, etc
-- Where to get [sprites] &mdash; small images used as labels
+- [Data sources] to be used (tiles, GeoJSON, etc.)
+- Where to get [sprites]  (small images used as labels)
 
 Then, it specifies a list of [layers], in the order in which they should be
 drawn. Layers further down the list are drawn on top of the earlier layers.
