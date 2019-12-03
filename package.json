@@ -1,0 +1,28 @@
+{
+  "name": "tile-stencil",
+  "version": "0.0.0",
+  "description": "Load a Mapbox style document and parse it into Javascript functions",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GlobeletJS/tile-stencil.git"
+  },
+  "keywords": [
+    "Mapbox",
+    "style",
+    "parse"
+  ],
+  "author": "Jeshurun Hembd",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/GlobeletJS/tile-stencil/issues"
+  },
+  "homepage": "https://github.com/GlobeletJS/tile-stencil#readme"
+}
