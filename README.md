@@ -5,18 +5,18 @@ Load a Mapbox style document and parse it into Javascript functions
 [Mapbox style documents] describe how a map should be drawn. The document
 begins with input information, such as:
 - [Data sources] to be used: tiles, GeoJSON, etc
-- Where to get [sprites] -- small images used as labels
+- Where to get [sprites] &mdash; small images used as labels
 
 Then, it specifies a list of [layers], in the order in which they should be
-drawn--layers further down the list are drawn on top of the earlier layers.
+drawn. Layers further down the list are drawn on top of the earlier layers.
 For each layer, the style document describes:
 - Which data source to use
 - A data filter, to select features from the source to draw in this layer
 - What style properties (colors, line thicknesses, fonts, etc) to use when 
   drawing
 
-The style properties (colors, etc) are specified as *functions*--i.e., they
-can vary depending on the zoom level or some property of the feature.
+The style properties (colors, etc) are specified as *functions*&mdash;i.e., 
+they can vary depending on the zoom level or some property of the feature.
 
 tile-stencil reads the document, loads relevant data about the source, loads 
 the sprite data, and parses the specified filters and property functions into 
@@ -49,7 +49,7 @@ const parsedLayer = parseLayer(layer);
 
 #### Return value
 A back link to the modified layer. (NOTE: the input layer is changed!)
-The following properties
+The following properties are changed:
 - `layer.filter` is replaced by a filter function, which can be used to filter
   features to the appropriate subset to be used in this layer, e.g.,
   `layerFeatures = features.filter(layer.filter);`
