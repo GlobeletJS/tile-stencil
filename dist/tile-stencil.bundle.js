@@ -672,66 +672,67 @@ function parseLayer(inputLayer) {
 }
 
 function parseStyle(style, mapboxToken) {
-  // Get a Promise that resolves to a Mapbox style document
+  // Get a Promise that resolves to a raw Mapbox style document
   const getStyleJson = (typeof style === "object")
     ? Promise.resolve(style)                // style is JSON already
     : getJSON( expandStyleURL(style, mapboxToken) ); // Get from URL
 
-  // Now set up a Promise chain to process the document
-  return getStyleJson
-    .then( parseLayers )
+  // Set up an asynchronous function to process the document
+  function parseStyleJson(rawStyleDoc) {
+    // Make a shallow copy of the document, to leave the input unchanged
+    const styleDoc = Object.assign({}, rawStyleDoc);
 
-    .then( retrieveSourceInfo );
+    // Expand layer references, then parse
+    styleDoc.layers = derefLayers(styleDoc.layers).map(parseLayer);
 
+    // Get linked info for sources and sprites
+    const sourcePromise = expandSources(styleDoc.sources, mapboxToken);
+    const spritePromise = loadSprite(styleDoc.sprite, mapboxToken);
 
-  // Gets data from referenced URLs, and attaches it to the style
-  function retrieveSourceInfo(styleDoc) {
-    const getSprite = loadSprite(styleDoc, mapboxToken);
-
-    const expandSources = Object.keys(styleDoc.sources)
-      .map(key => expandSource(key, styleDoc.sources, mapboxToken));
-
-    return Promise.all([...expandSources, getSprite])
-      .then(() => styleDoc);
+    return Promise.all([sourcePromise, spritePromise])
+      .then( ([sources, spriteData]) => {
+        styleDoc.sources = sources;
+        styleDoc.spriteData = spriteData;
+        return styleDoc;
+      });
   }
+
+  // Chain together and return
+  return getStyleJson.then( parseStyleJson );
 }
 
-function parseLayers(rawStyleDoc) {
-  // Make a shallow copy of the document, to leave the input unchanged
-  const styleDoc = Object.assign({}, rawStyleDoc);
+function expandSources(rawSources, token) {
+  const expandPromises = Object.entries(rawSources).map(expandSource);
 
-  // Expand layer references
-  styleDoc.layers = derefLayers(styleDoc.layers);
+  function expandSource([key, rawSource]) {
+    // Make a shallow copy of the input. Note: some properties may still be
+    // pointing back to the original style document, like .vector_layers,
+    // .bounds, .center, .extent
+    const source = Object.assign({}, rawSource);
 
-  // Parse layers to convert filters and properties into functions
-  styleDoc.layers = styleDoc.layers.map(parseLayer);
+    if (source.url === undefined) return [key, source]; // No change
 
-  return styleDoc;
+    // Load the referenced TileJSON document, and copy its values to source
+    return getJSON( expandTileURL(source.url, token) )
+      .then( tileJson => [key, Object.assign(source, tileJson)] );
+  }
+
+  function combineSources(keySourcePairs) {
+    const sources = {};
+    keySourcePairs.forEach( ([key, val]) => { sources[key] = val; } );
+    return sources;
+  }
+
+  return Promise.all( expandPromises ).then( combineSources );
 }
 
-function loadSprite(styleDoc, token) {
-  if (!styleDoc.sprite) return;
+function loadSprite(sprite, token) {
+  if (!sprite) return;
 
-  const urls = expandSpriteURLs(styleDoc.sprite, token);
+  const urls = expandSpriteURLs(sprite, token);
 
   return Promise.all([getImage(urls.image), getJSON(urls.meta)])
-    .then(([image, meta]) => { styleDoc.spriteData = { image, meta }; });
-}
-
-function expandSource(key, sources, token) {
-  var source = sources[key];
-  if (source.url === undefined) return; // No change
-
-  // Load the referenced TileJSON document
-  return getJSON( expandTileURL(source.url, token) )
-    .then(json => merge(json));
-
-  function merge(json) {
-    // Add any custom properties from the style document
-    Object.keys(source).forEach( k2 => { json[k2] = source[k2]; } );
-    // Replace current entry with the TileJSON data
-    sources[key] = json;
-  }
+    .then( ([image, meta]) => ({ image, meta }) );
 }
 
 export { parseLayer, parseStyle };
