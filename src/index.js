@@ -1,15 +1,19 @@
-import { expandLayerReferences } from "./deref.js";
+import { derefLayers } from "./deref.js";
 import { expandStyleURL, expandSpriteURLs, expandTileURL } from "./mapbox.js";
 import { getJSON, getImage } from "./read.js";
 import { buildFeatureFilter } from "./filter.js";
 import { autoGetters } from "./style-func.js";
 import { layoutDefaults, paintDefaults } from "./defaults.js";
 
-export function parseLayer(layer) {
-  // NOTE: modifies input layer!
+export function parseLayer(inputLayer) {
+  // Make a shallow copy of the layer, to leave the input unchanged
+  const layer = Object.assign({}, inputLayer);
+
+  // Replace filter and rendering properties with functions
   layer.filter = buildFeatureFilter(layer.filter);
   layer.layout = autoGetters(layer.layout, layoutDefaults[layer.type]);
   layer.paint  = autoGetters(layer.paint,  paintDefaults[layer.type] );
+
   return layer;
 }
 
@@ -21,11 +25,10 @@ export function parseStyle(style, mapboxToken) {
 
   // Now set up a Promise chain to process the document
   return getStyleJson
-    .then( expandLayerReferences )
+    .then( parseLayers )
 
-    .then( retrieveSourceInfo )
+    .then( retrieveSourceInfo );
 
-    .then( parseLayers );
 
   // Gets data from referenced URLs, and attaches it to the style
   function retrieveSourceInfo(styleDoc) {
@@ -39,8 +42,16 @@ export function parseStyle(style, mapboxToken) {
   }
 }
 
-function parseLayers(styleDoc) {
-  styleDoc.layers.forEach(parseLayer);
+function parseLayers(rawStyleDoc) {
+  // Make a shallow copy of the document, to leave the input unchanged
+  const styleDoc = Object.assign({}, rawStyleDoc);
+
+  // Expand layer references
+  styleDoc.layers = derefLayers(styleDoc.layers);
+
+  // Parse layers to convert filters and properties into functions
+  styleDoc.layers = styleDoc.layers.map(parseLayer);
+
   return styleDoc;
 }
 

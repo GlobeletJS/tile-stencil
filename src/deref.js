@@ -9,11 +9,6 @@ const refProperties = [
   'layout'
 ];
 
-export function expandLayerReferences(styleDoc) {
-  styleDoc.layers = derefLayers(styleDoc.layers);
-  return styleDoc;
-}
-
 /**
  * Given an array of layers, some of which may contain `ref` properties
  * whose value is the `id` of another property, return a new array where
@@ -23,7 +18,7 @@ export function expandLayerReferences(styleDoc) {
  * The input is not modified. The output may contain references to portions
  * of the input.
  */
-function derefLayers(layers) {
+export function derefLayers(layers) {
   layers = layers.slice(); // ??? What are we trying to achieve here?
 
   const map = Object.create(null); // stackoverflow.com/a/21079232/10082269

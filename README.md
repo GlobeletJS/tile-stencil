@@ -48,8 +48,7 @@ const parsedLayer = parseLayer(layer);
 - `layer`: An element from the [layers] property of a Mapbox style document
 
 #### Return value
-A back link to the modified layer. (NOTE: the input layer is changed!)
-The following properties are changed:
+A modified layer, where the following properties are changed:
 - `layer.filter` is replaced by a filter function, which can be used to filter
   features to the appropriate subset to be used in this layer, e.g.,
   `layerFeatures = features.filter(layer.filter);`
@@ -89,10 +88,9 @@ const parsedStyle = parseStyle(styleDoc, mapboxToken);
   TileJSON or sprite data.
 
 #### Return value
-A [Promise] that resolves to the modified style document.
+A [Promise] that resolves to a parsed style document.
 
-When the promise resolves, the following changes will have been made to the 
-input styleDoc:
+The parsed document will have the following changes relative to the input:
 - `styleDoc.sources`: If a source was specified as a URL pointing to a
   [TileJSON] document, the properties of that source will be augmented by
   properties retrieved from the linked document
