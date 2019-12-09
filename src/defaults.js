@@ -64,9 +64,15 @@ export const layoutDefaults = {
   "circle": {
     "visibility": "visible",
   },
-  // "fill-extrusion": {},
-  // "heatmap": {},
-  // "hillshade": {},
+  "fill-extrusion": {
+    "visibility": "visible",
+  },
+  "heatmap": {
+    "visibility": "visible",
+  },
+  "hillshade": {
+    "visibility": "visible",
+  },
 }
 
 export const paintDefaults = {
@@ -138,7 +144,28 @@ export const paintDefaults = {
     "circle-stroke-color": "#000000",
     "circle-stroke-opacity": 1,
   },
-  // "fill-extrusion": {},
-  // "heatmap": {},
-  // "hillshade": {},
+  "fill-extrusion": {
+    "fill-extrusion-opacity": 1,
+    "fill-extrusion-color": "#000000",
+    "fill-extrusion-translate": [0, 0],
+    "fill-extrusion-translate-anchor": "map",
+    "fill-extrusion-height": 0,
+    "fill-extrusion-base": 0,
+    "fill-extrusion-vertical-gradient": true,
+  },
+  "heatmap": {
+    "heatmap-radius": 30,
+    "heatmap-weight": 1,
+    "heatmap-intensity": 1,
+    "heatmap-color": ["interpolate",["linear"],["heatmap-density"],0,"rgba(0, 0, 255,0)",0.1,"royalblue",0.3,"cyan",0.5,"lime",0.7,"yellow",1,"red"],
+    "heatmap-opacity": 1,
+  },
+  "hillshade": {
+    "hillshade-illumination-direction": 335,
+    "hillshade-illumination-anchor": "viewport",
+    "hillshade-exaggeration": 0.5,
+    "hillshade-shadow-color": "#000000",
+    "hillshade-highlight-color": "#FFFFFF",
+    "hillshade-accent-color": "#000000",
+  },
 }

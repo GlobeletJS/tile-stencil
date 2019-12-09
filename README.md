@@ -109,9 +109,6 @@ The parsed document will have the following changes relative to the input:
 tile-painter does not implement the following features of the style
 specification:
 - GeoJSON, image, or video sources
-- [fill-extrusion layers](https://docs.mapbox.com/mapbox-gl-js/style-spec/#layers-fill-extrusion)
-- [heatmap layers](https://docs.mapbox.com/mapbox-gl-js/style-spec/#layers-heatmap)
-- [hillshade layers](https://docs.mapbox.com/mapbox-gl-js/style-spec/#layers-hillshade)
 - [Zoom-and-property functions](https://docs.mapbox.com/mapbox-gl-js/style-spec/#types-function-zoom-property)
 - [Expressions](https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions)
 
