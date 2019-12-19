@@ -34,20 +34,19 @@ tile-stencil is provided as an ESM import.
 import * as tileStencil from 'tile-stencil';
 ```
 
-## API
 tileStencil exposes two methods: parseLayer and parseStyle
 
-### parseLayer
+## parseLayer
 
-#### Syntax
+### Syntax
 ```javascript
 const parsedLayer = parseLayer(layer);
 ```
 
-#### Parameters
+### Parameters
 - `layer`: An element from the [layers] property of a Mapbox style document
 
-#### Return value
+### Return value
 A modified layer, where the following properties are changed:
 - `layer.filter` is replaced by a filter function, which can be used to filter
   features to the appropriate subset to be used in this layer, e.g.,
@@ -55,7 +54,7 @@ A modified layer, where the following properties are changed:
 - `layer.layout` is replaced by a value getter dictionary
 - `layer.paint` is replaced by a value getter dictionary
 
-#### Structure of returned .layout and .paint objects
+### Structure of returned .layout and .paint objects
 The returned objects can be used to retrieve style properties as follows
 (where our example layer has `layer.type === "line"`):
 ```javascript
@@ -74,20 +73,20 @@ where `.type` may take one of three values:
 - `zoom`: Style value depends on the map zoom level
 - `property`: Style value depends on feature properties
 
-### parseStyle
+## parseStyle
 
-#### Syntax
+### Syntax
 ```javascript
 const parsedStyle = parseStyle(styleDoc, mapboxToken);
 ```
 
-#### Parameters
+### Parameters
 - `styleDoc`: A Mapbox Style document, OR a URL pointing to a style document
 - `mapboxToken`: Your Mapbox API key (Optional). This is only needed if your
   style document includes references to Mapbox-hosted resources, such as
   TileJSON or sprite data.
 
-#### Return value
+### Return value
 A [Promise] that resolves to a parsed style document.
 
 The parsed document will have the following changes relative to the input:

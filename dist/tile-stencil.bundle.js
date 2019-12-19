@@ -731,17 +731,15 @@ function parseStyle(style, mapboxToken) {
 function expandSources(rawSources, token) {
   const expandPromises = Object.entries(rawSources).map(expandSource);
 
-  function expandSource([key, rawSource]) {
-    // Make a shallow copy of the input. Note: some properties may still be
-    // pointing back to the original style document, like .vector_layers,
-    // .bounds, .center, .extent
-    const source = Object.assign({}, rawSource);
+  function expandSource([key, source]) {
+    // If no .url, return a shallow copy of the input. 
+    // Note: some properties may still be pointing back to the original 
+    // style document, like .vector_layers, .bounds, .center, .extent
+    if (source.url === undefined) return [key, Object.assign({}, source)];
 
-    if (source.url === undefined) return [key, source]; // No change
-
-    // Load the referenced TileJSON document, and copy its values to source
+    // Load the referenced TileJSON document, add any values from source
     return getJSON( expandTileURL(source.url, token) )
-      .then( tileJson => [key, Object.assign(source, tileJson)] );
+      .then( tileJson => [key, Object.assign(tileJson, source)] );
   }
 
   function combineSources(keySourcePairs) {
