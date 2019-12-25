@@ -25,9 +25,11 @@ function buildStyleFunc(style, defaultVal) {
     styleFunc.type = "zoom";
 
   } else {
-    getArg = (zoom, feature) => feature.properties[style.property];
+    let propertyName = style.property;
+    getArg = (zoom, feature) => feature.properties[propertyName];
     styleFunc = getStyleFunc(style, getArg);
     styleFunc.type = "property";
+    styleFunc.property = propertyName;
 
   } // NOT IMPLEMENTED: zoom-and-property functions
 
