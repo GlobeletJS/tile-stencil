@@ -688,46 +688,62 @@ const paintDefaults = {
   },
 };
 
-function parseLayer(inputLayer) {
-  // Make a shallow copy of the layer, to leave the input unchanged
-  const layer = Object.assign({}, inputLayer);
+function getStyleFuncs(inputLayer) {
+  const layer = Object.assign({}, inputLayer); // Leave input unchanged
 
-  // Replace filter and rendering properties with functions
-  layer.filter = buildFeatureFilter(layer.filter);
+  // Replace rendering properties with functions
   layer.layout = autoGetters(layer.layout, layoutDefaults[layer.type]);
   layer.paint  = autoGetters(layer.paint,  paintDefaults[layer.type] );
 
   return layer;
 }
 
+function parseLayer(inputLayer) {
+  // Like getStyleFuncs, but also parses the filter. DEPRECATED
+  const layer = Object.assign({}, inputLayer); // Leave input unchanged
+
+  layer.layout = autoGetters(layer.layout, layoutDefaults[layer.type]);
+  layer.paint  = autoGetters(layer.paint,  paintDefaults[layer.type] );
+  layer.filter = buildFeatureFilter(layer.filter);
+
+  return layer;
+}
+
+function loadStyle(style, mapboxToken) {
+  // Loads a style document and any linked information
+
+  const getStyle = (typeof style === "object")
+    ? Promise.resolve(style)                // style is JSON already
+    : getJSON( expandStyleURL(style, mapboxToken) ); // Get from URL
+
+  return getStyle
+    .then( styleDoc => expandLinks(styleDoc, mapboxToken) );
+}
+
 function parseStyle(style, mapboxToken) {
-  // Get a Promise that resolves to a raw Mapbox style document
+  // Like loadStyle, but also parses layers. DEPRECATED
+
   const getStyleJson = (typeof style === "object")
     ? Promise.resolve(style)                // style is JSON already
     : getJSON( expandStyleURL(style, mapboxToken) ); // Get from URL
 
-  // Set up an asynchronous function to process the document
-  function parseStyleJson(rawStyleDoc) {
-    // Make a shallow copy of the document, to leave the input unchanged
-    const styleDoc = Object.assign({}, rawStyleDoc);
+  return getStyleJson
+    .then( rawStyle => Object.assign({}, rawStyle) ) // Leave input unchanged
+    .then( styleDoc => expandLinks(styleDoc, mapboxToken) )
+    .then( style => { style.layers = style.layers.map(parseLayer); } );
+}
 
-    // Expand layer references, then parse
-    styleDoc.layers = derefLayers(styleDoc.layers).map(parseLayer);
+function expandLinks(styleDoc, mapboxToken) {
+  styleDoc.layers = derefLayers(styleDoc.layers);
 
-    // Get linked info for sources and sprites
-    const sourcePromise = expandSources(styleDoc.sources, mapboxToken);
-    const spritePromise = loadSprite(styleDoc.sprite, mapboxToken);
-
-    return Promise.all([sourcePromise, spritePromise])
-      .then( ([sources, spriteData]) => {
-        styleDoc.sources = sources;
-        styleDoc.spriteData = spriteData;
-        return styleDoc;
-      });
-  }
-
-  // Chain together and return
-  return getStyleJson.then( parseStyleJson );
+  return Promise.all([
+    expandSources(styleDoc.sources, mapboxToken),
+    loadSprite(styleDoc.sprite, mapboxToken),
+  ]).then( ([sources, spriteData]) => {
+    styleDoc.sources = sources;
+    styleDoc.spriteData = spriteData;
+    return styleDoc;
+  });
 }
 
 function expandSources(rawSources, token) {
@@ -762,4 +778,4 @@ function loadSprite(sprite, token) {
     .then( ([image, meta]) => ({ image, meta }) );
 }
 
-export { parseLayer, parseStyle };
+export { getStyleFuncs, loadStyle, parseLayer, parseStyle };
