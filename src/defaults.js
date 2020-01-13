@@ -73,6 +73,9 @@ export const layoutDefaults = {
   "hillshade": {
     "visibility": "visible",
   },
+  "geotiff": {
+    "visibility": "visible",
+  },
 }
 
 export const paintDefaults = {
@@ -167,5 +170,11 @@ export const paintDefaults = {
     "hillshade-shadow-color": "#000000",
     "hillshade-highlight-color": "#FFFFFF",
     "hillshade-accent-color": "#000000",
+  },
+  "geotiff": {
+    "colorbar": "ylgnbu",
+    "colorbar-min": 100,
+    "colorbar-max": 30000,
+    "colorbar-type": "log",
   },
 }

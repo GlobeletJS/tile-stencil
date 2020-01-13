@@ -461,7 +461,6 @@ function autoGetters(properties = {}, defaults) {
 
 function buildStyleFunc(style, defaultVal) {
   var styleFunc, getArg;
-
   if (style === undefined) {
     styleFunc = () => defaultVal;
     styleFunc.type = "constant";
@@ -483,7 +482,6 @@ function buildStyleFunc(style, defaultVal) {
     styleFunc.property = propertyName;
 
   } // NOT IMPLEMENTED: zoom-and-property functions
-
   return styleFunc;
 }
 
@@ -591,6 +589,9 @@ const layoutDefaults = {
   "hillshade": {
     "visibility": "visible",
   },
+  "geotiff": {
+    "visibility": "visible",
+  },
 };
 
 const paintDefaults = {
@@ -686,6 +687,12 @@ const paintDefaults = {
     "hillshade-highlight-color": "#FFFFFF",
     "hillshade-accent-color": "#000000",
   },
+  "geotiff": {
+    "colorbar": "ylgnbu",
+    "colorbar-min": 100,
+    "colorbar-max": 30000,
+    "colorbar-type": "log",
+  },
 };
 
 function getStyleFuncs(inputLayer) {
@@ -701,11 +708,9 @@ function getStyleFuncs(inputLayer) {
 function parseLayer(inputLayer) {
   // Like getStyleFuncs, but also parses the filter. DEPRECATED
   const layer = Object.assign({}, inputLayer); // Leave input unchanged
-
   layer.layout = autoGetters(layer.layout, layoutDefaults[layer.type]);
   layer.paint  = autoGetters(layer.paint,  paintDefaults[layer.type] );
   layer.filter = buildFeatureFilter(layer.filter);
-
   return layer;
 }
 
@@ -722,20 +727,26 @@ function loadStyle(style, mapboxToken) {
 
 function parseStyle(style, mapboxToken) {
   // Like loadStyle, but also parses layers. DEPRECATED
-
+  
   const getStyleJson = (typeof style === "object")
     ? Promise.resolve(style)                // style is JSON already
     : getJSON( expandStyleURL(style, mapboxToken) ); // Get from URL
 
   return getStyleJson
-    .then( rawStyle => Object.assign({}, rawStyle) ) // Leave input unchanged
-    .then( styleDoc => expandLinks(styleDoc, mapboxToken) )
-    .then( style => { style.layers = style.layers.map(parseLayer); } );
+    .then( rawStyle => {
+      return Object.assign({}, rawStyle); 
+    }) // Leave input unchanged
+    .then( styleDoc => {
+      return expandLinks(styleDoc, mapboxToken); 
+    })
+    .then( style => { 
+      style.layers = style.layers.map(parseLayer);
+      return style;
+    } );
 }
 
 function expandLinks(styleDoc, mapboxToken) {
   styleDoc.layers = derefLayers(styleDoc.layers);
-
   return Promise.all([
     expandSources(styleDoc.sources, mapboxToken),
     loadSprite(styleDoc.sprite, mapboxToken),

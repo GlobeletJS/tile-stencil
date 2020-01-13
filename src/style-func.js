@@ -10,7 +10,6 @@ export function autoGetters(properties = {}, defaults) {
 
 function buildStyleFunc(style, defaultVal) {
   var styleFunc, getArg;
-
   if (style === undefined) {
     styleFunc = () => defaultVal;
     styleFunc.type = "constant";
@@ -32,7 +31,6 @@ function buildStyleFunc(style, defaultVal) {
     styleFunc.property = propertyName;
 
   } // NOT IMPLEMENTED: zoom-and-property functions
-
   return styleFunc;
 }
 
