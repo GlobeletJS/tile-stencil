@@ -43,16 +43,9 @@ export function parseStyle(style, mapboxToken) {
     : getJSON( expandStyleURL(style, mapboxToken) ); // Get from URL
 
   return getStyleJson
-    .then( rawStyle => {
-      return Object.assign({}, rawStyle); 
-    }) // Leave input unchanged
-    .then( styleDoc => {
-      return expandLinks(styleDoc, mapboxToken); 
-    })
-    .then( style => { 
-      style.layers = style.layers.map(parseLayer);
-      return style;
-    } );
+    .then( rawStyle =>  Object.assign({}, rawStyle) ) // Leave input unchanged
+    .then( styleDoc =>  expandLinks(styleDoc, mapboxToken) )
+    .then( style => { style.layers = style.layers.map(parseLayer); } );
 }
 
 function expandLinks(styleDoc, mapboxToken) {
