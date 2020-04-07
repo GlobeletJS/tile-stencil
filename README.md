@@ -34,25 +34,25 @@ tile-stencil is provided as an ESM import.
 import * as tileStencil from 'tile-stencil';
 ```
 
-tileStencil exposes two methods: parseLayer and parseStyle
+tileStencil exposes four methods:
+- getStyleFuncs
+- parseLayer
+- loadStyle
+- parseStyle
 
-## parseLayer
+## getStyleFuncs
 
 ### Syntax
 ```javascript
-const parsedLayer = parseLayer(layer);
+const parsedLayer = tileStencil.getStyleFuncs(inputLayer);
 ```
 
 ### Parameters
 - `layer`: An element from the [layers] property of a Mapbox style document
 
 ### Return value
-A modified layer, where the following properties are changed:
-- `layer.filter` is replaced by a filter function, which can be used to filter
-  features to the appropriate subset to be used in this layer, e.g.,
-  `layerFeatures = features.filter(layer.filter);`
-- `layer.layout` is replaced by a value getter dictionary
-- `layer.paint` is replaced by a value getter dictionary
+A copy of `inputLayer`, where the `.layout` and `.paint` properties have been
+replaced by value getter dictionaries
 
 ### Structure of returned .layout and .paint objects
 The returned objects can be used to retrieve style properties as follows
@@ -73,11 +73,21 @@ where `.type` may take one of three values:
 - `zoom`: Style value depends on the map zoom level
 - `property`: Style value depends on feature properties
 
-## parseStyle
+## parseLayer
+Like getStyleFuncs, but also parses the input layer's `.filter` property.
+
+The `.filter` property on the returned object can be used to filter features
+to the appropriate subset to be used in rendering this layer, e.g.,
+```javascript
+layerFeatures = features.filter(parsedLayer.filter);
+```
+
+## loadStyle
+Loads a style document and any linked information
 
 ### Syntax
 ```javascript
-const parsedStyle = parseStyle(styleDoc, mapboxToken);
+const loadedStyle = loadStyle(styleDoc, mapboxToken);
 ```
 
 ### Parameters
@@ -98,20 +108,26 @@ The parsed document will have the following changes relative to the input:
   - `.spriteData.image`: A PNG image file containing the sprite data
   - `.spriteData.meta`: The JSON document containing the description of each
     image contained in the sprite
-- `styleDoc.layers`: Each layer in the returned style document is parsed by
-  `tileStencil.parseLayer`, as described above
+- `styleDoc.layers`: Some Mapbox styles have non-standard layers that do not 
+  list all of the required properties, but rather 'reference' these properties
+  from another layer. The layers in the parsed document will have these
+  references resolved, so that the returned document is standards-compliant. 
+
+## parseStyle
+Like loadStyle, but each layer in the returned document is processed through
+parseLayer.
 
 [Promise]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 [TileJSON]: https://github.com/mapbox/tilejson-spec
 
 ## Un-supported features
-tile-painter does not implement the following features of the style
+tile-stencil does not implement the following features of the style
 specification:
 - GeoJSON, image, or video sources
 - [Zoom-and-property functions](https://docs.mapbox.com/mapbox-gl-js/style-spec/#types-function-zoom-property)
 - [Expressions](https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions)
 
-While expressions are not yet implemented, tile-painter *does* implement the
+While expressions are not yet implemented, tile-stencil *does* implement the
 following older features:
 - [functions](https://docs.mapbox.com/mapbox-gl-js/style-spec/#other-function)
   for describing the dependence of a style value on zoom level or feature
