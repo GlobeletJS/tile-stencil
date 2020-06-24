@@ -52,7 +52,9 @@ export function parseStyle(style, mapboxToken) {
 
 function expandLinks(styleDoc, mapboxToken) {
   styleDoc.layers = derefLayers(styleDoc.layers);
-  styleDoc.glyphs = expandGlyphURL(styleDoc.glyphs, mapboxToken);
+  if (styleDoc.glyphs) {
+    styleDoc.glyphs = expandGlyphURL(styleDoc.glyphs, mapboxToken);
+  }
 
   return Promise.all([
     expandSources(styleDoc.sources, mapboxToken),
