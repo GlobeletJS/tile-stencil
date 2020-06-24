@@ -1,5 +1,5 @@
 import { derefLayers } from "./deref.js";
-import { expandStyleURL, expandSpriteURLs, expandTileURL } from "./mapbox.js";
+import { expandStyleURL, expandSpriteURLs, expandGlyphURL, expandTileURL } from "./mapbox.js";
 import { getJSON, getImage } from "./read.js";
 import { buildFeatureFilter } from "./filter.js";
 import { autoGetters } from "./style-func.js";
@@ -52,6 +52,7 @@ export function parseStyle(style, mapboxToken) {
 
 function expandLinks(styleDoc, mapboxToken) {
   styleDoc.layers = derefLayers(styleDoc.layers);
+  styleDoc.glyphs = expandGlyphURL(styleDoc.glyphs, mapboxToken);
 
   return Promise.all([
     expandSources(styleDoc.sources, mapboxToken),

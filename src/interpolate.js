@@ -1,4 +1,4 @@
-import { parseCSSColor } from 'csscolorparser';
+import { color, rgb } from 'd3-color';
 
 export function buildInterpFunc(base, sampleVal) {
   // Return a function to interpolate the value of y(x), given endpoints
@@ -30,7 +30,7 @@ function getInterpolator(sampleVal) {
   // given relative position t between the two end positions
 
   var type = typeof sampleVal;
-  if (type === "string" && parseCSSColor(sampleVal)) type = "color";
+  if (type === "string" && color(sampleVal)) type = "color";
 
   switch (type) {
     case "number": // Linear interpolator
@@ -38,7 +38,7 @@ function getInterpolator(sampleVal) {
 
     case "color":  // Interpolate RGBA
       return (v1, t, v2) => 
-        interpColor( parseCSSColor(v1), t, parseCSSColor(v2) );
+        interpColor( rgb(v1), t, rgb(v2) );
 
     default:       // Assume step function
       return (v1, t, v2) => v1;
@@ -46,12 +46,13 @@ function getInterpolator(sampleVal) {
 }
 
 function interpColor(c0, t, c1) {
-  // Inputs c0, c1 are 4-element RGBA arrays as returned by parseCSSColor
-  let c = c0.map( (c0_i, i) => c0_i + t * (c1[i] - c0_i) );
+  // Inputs c0, c1 are rgb color objects as returned by d3.rgb
+  const interpFloat = (a, b) => a + t * (b - a);
+  const interpInteger = (a, b) => Math.round(interpFloat(a, b));
 
   return "rgba(" +
-    Math.round(c[0]) + ", " +
-    Math.round(c[1]) + ", " + 
-    Math.round(c[2]) + ", " +
-    c[3] + ")";
+    interpInteger(c0.r, c1.r) + ", " +
+    interpInteger(c0.g, c1.g) + ", " + 
+    interpInteger(c0.b, c1.b) + ", " +
+    interpFloat(c0.a, c1.a) + ")";
 }

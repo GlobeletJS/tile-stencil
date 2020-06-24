@@ -29,3 +29,10 @@ export function expandTileURL(url, token) {
   var apiRoot = "https://api.mapbox.com/v4/";
   return url.replace(prefix, apiRoot) + ".json?secure&access_token=" + token;
 }
+
+export function expandGlyphURL(url, token) {
+  var prefix = /^mapbox:\/\/fonts\//;
+  if ( !url.match(prefix) ) return url;
+  var apiRoot = "https://api.mapbox.com/fonts/v1/";
+  return url.replace(prefix, apiRoot) + "?access_token=" + token;
+}
