@@ -936,6 +936,7 @@ function expandSources(rawSources, token) {
     // If no .url, return a shallow copy of the input. 
     // Note: some properties may still be pointing back to the original 
     // style document, like .vector_layers, .bounds, .center, .extent
+    if (source.type === "geojson") return getJSON(source.data).then(JSON => [key,Object.assign(JSON, source)]);
     if (source.url === undefined) return [key, Object.assign({}, source)];
 
     // Load the referenced TileJSON document, add any values from source
