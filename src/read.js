@@ -1,10 +1,22 @@
-export function getJSON(dataHref) {
-  // Wrap the fetch API to force a rejected promise if response is not OK
-  const checkResponse = (response) => (response.ok)
-    ? response.json()
-    : Promise.reject(response); // Can check .status on returned response
+export function getJSON(data) {
+  switch (typeof data) {
+    case "object":
+      // data may be GeoJSON already. Confirm and return
+      return (data !== null && data.type)
+        ? Promise.resolve(data)
+        : Promise.reject(data);
 
-  return fetch(dataHref).then(checkResponse);
+    case "string":
+      // data must be a URL
+      return fetch(data).then(response => {
+        return (response.ok)
+          ? response.json()
+          : Promise.reject(response);
+      });
+
+    default:
+      return Promise.reject(data);
+  }
 }
 
 export function getImage(href) {

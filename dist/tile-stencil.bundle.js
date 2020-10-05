@@ -90,13 +90,25 @@ function expandGlyphURL(url, token) {
   return url.replace(prefix, apiRoot) + "?access_token=" + token;
 }
 
-function getJSON(dataHref) {
-  // Wrap the fetch API to force a rejected promise if response is not OK
-  const checkResponse = (response) => (response.ok)
-    ? response.json()
-    : Promise.reject(response); // Can check .status on returned response
+function getJSON(data) {
+  switch (typeof data) {
+    case "object":
+      // data may be GeoJSON already. Confirm and return
+      return (data !== null && data.type)
+        ? Promise.resolve(data)
+        : Promise.reject(data);
 
-  return fetch(dataHref).then(checkResponse);
+    case "string":
+      // data must be a URL
+      return fetch(data).then(response => {
+        return (response.ok)
+          ? response.json()
+          : Promise.reject(response);
+      });
+
+    default:
+      return Promise.reject(data);
+  }
 }
 
 function getImage(href) {
@@ -936,7 +948,8 @@ function expandSources(rawSources, token) {
     // If no .url, return a shallow copy of the input. 
     // Note: some properties may still be pointing back to the original 
     // style document, like .vector_layers, .bounds, .center, .extent
-    if (source.type === "geojson") return getJSON(source.data).then(JSON => [key,Object.assign(JSON, source)]);
+    if (source.type === "geojson") return getJSON(source.data)
+      .then(JSON => [key,Object.assign(JSON, source)]);
     if (source.url === undefined) return [key, Object.assign({}, source)];
 
     // Load the referenced TileJSON document, add any values from source
