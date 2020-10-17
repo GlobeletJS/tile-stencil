@@ -1,56 +1,3 @@
-const refProperties = [
-  'type', 
-  'source', 
-  'source-layer', 
-  'minzoom', 
-  'maxzoom', 
-  'filter', 
-  'layout'
-];
-
-function derefLayers(layers) {
-  // From mapbox-gl-js, style-spec/deref.js
-  /**
-   * Given an array of layers, some of which may contain `ref` properties
-   * whose value is the `id` of another property, return a new array where
-   * such layers have been augmented with the 'type', 'source', etc. properties
-   * from the parent layer, and the `ref` property has been removed.
-   *
-   * The input is not modified. The output may contain references to portions
-   * of the input.
-   */
-  layers = layers.slice(); // ??? What are we trying to achieve here?
-
-  const map = Object.create(null); // stackoverflow.com/a/21079232/10082269
-  layers.forEach( layer => { map[layer.id] = layer; } );
-
-  for (let i = 0; i < layers.length; i++) {
-    if ('ref' in layers[i]) {
-      layers[i] = deref(layers[i], map[layers[i].ref]);
-    }
-  }
-
-  return layers;
-}
-
-function deref(layer, parent) {
-  const result = {};
-
-  for (const k in layer) {
-    if (k !== 'ref') {
-      result[k] = layer[k];
-    }
-  }
-
-  refProperties.forEach((k) => {
-    if (k in parent) {
-      result[k] = parent[k];
-    }
-  });
-
-  return result;
-}
-
 function expandStyleURL(url, token) {
   var prefix = /^mapbox:\/\/styles\//;
   if ( !url.match(prefix) ) return url;
@@ -880,6 +827,114 @@ const paintDefaults = {
   },
 };
 
+const refProperties = [
+  'type', 
+  'source', 
+  'source-layer', 
+  'minzoom', 
+  'maxzoom', 
+  'filter', 
+  'layout'
+];
+
+function derefLayers(layers) {
+  // From mapbox-gl-js, style-spec/deref.js
+  /**
+   * Given an array of layers, some of which may contain `ref` properties
+   * whose value is the `id` of another property, return a new array where
+   * such layers have been augmented with the 'type', 'source', etc. properties
+   * from the parent layer, and the `ref` property has been removed.
+   *
+   * The input is not modified. The output may contain references to portions
+   * of the input.
+   */
+  layers = layers.slice(); // ??? What are we trying to achieve here?
+
+  const map = Object.create(null); // stackoverflow.com/a/21079232/10082269
+  layers.forEach( layer => { map[layer.id] = layer; } );
+
+  for (let i = 0; i < layers.length; i++) {
+    if ('ref' in layers[i]) {
+      layers[i] = deref(layers[i], map[layers[i].ref]);
+    }
+  }
+
+  return layers;
+}
+
+function deref(layer, parent) {
+  const result = {};
+
+  for (const k in layer) {
+    if (k !== 'ref') {
+      result[k] = layer[k];
+    }
+  }
+
+  refProperties.forEach((k) => {
+    if (k in parent) {
+      result[k] = parent[k];
+    }
+  });
+
+  return result;
+}
+
+function loadLinks(styleDoc, mapboxToken) {
+  styleDoc.layers = derefLayers(styleDoc.layers);
+  if (styleDoc.glyphs) {
+    styleDoc.glyphs = expandGlyphURL(styleDoc.glyphs, mapboxToken);
+  }
+
+  return Promise.all([
+    expandSources(styleDoc.sources, mapboxToken),
+    loadSprite(styleDoc.sprite, mapboxToken),
+  ]).then( ([sources, spriteData]) => {
+    styleDoc.sources = sources;
+    styleDoc.spriteData = spriteData;
+    return styleDoc;
+  });
+}
+
+function expandSources(rawSources, token) {
+  const expandPromises = Object.entries(rawSources).map(expandSource);
+
+  function expandSource([key, source]) {
+    if (source.type === "geojson") {
+      return getJSON(source.data).then(JSON => {
+        source.data = JSON;
+        return [key, source];
+      });
+    }
+
+    // If no .url, return a shallow copy of the input. 
+    // Note: some properties may still be pointing back to the original 
+    // style document, like .vector_layers, .bounds, .center, .extent
+    if (source.url === undefined) return [key, Object.assign({}, source)];
+
+    // Load the referenced TileJSON document, add any values from source
+    return getJSON( expandTileURL(source.url, token) )
+      .then( tileJson => [key, Object.assign(tileJson, source)] );
+  }
+
+  function combineSources(keySourcePairs) {
+    const sources = {};
+    keySourcePairs.forEach( ([key, val]) => { sources[key] = val; } );
+    return sources;
+  }
+
+  return Promise.all( expandPromises ).then( combineSources );
+}
+
+function loadSprite(sprite, token) {
+  if (!sprite) return;
+
+  const urls = expandSpriteURLs(sprite, token);
+
+  return Promise.all([getImage(urls.image), getJSON(urls.meta)])
+    .then( ([image, meta]) => ({ image, meta }) );
+}
+
 function getStyleFuncs(inputLayer) {
   const layer = Object.assign({}, inputLayer); // Leave input unchanged
 
@@ -909,7 +964,7 @@ function loadStyle(style, mapboxToken) {
     : getJSON( expandStyleURL(style, mapboxToken) ); // Get from URL
 
   return getStyle
-    .then( styleDoc => expandLinks(styleDoc, mapboxToken) );
+    .then( styleDoc => loadLinks(styleDoc, mapboxToken) );
 }
 
 function parseStyle(style, mapboxToken) {
@@ -921,58 +976,8 @@ function parseStyle(style, mapboxToken) {
 
   return getStyleJson
     .then( rawStyle => Object.assign({}, rawStyle) ) // Leave input unchanged
-    .then( styleDoc => expandLinks(styleDoc, mapboxToken) )
+    .then( styleDoc => loadLinks(styleDoc, mapboxToken) )
     .then( style => { style.layers = style.layers.map(parseLayer); } );
-}
-
-function expandLinks(styleDoc, mapboxToken) {
-  styleDoc.layers = derefLayers(styleDoc.layers);
-  if (styleDoc.glyphs) {
-    styleDoc.glyphs = expandGlyphURL(styleDoc.glyphs, mapboxToken);
-  }
-
-  return Promise.all([
-    expandSources(styleDoc.sources, mapboxToken),
-    loadSprite(styleDoc.sprite, mapboxToken),
-  ]).then( ([sources, spriteData]) => {
-    styleDoc.sources = sources;
-    styleDoc.spriteData = spriteData;
-    return styleDoc;
-  });
-}
-
-function expandSources(rawSources, token) {
-  const expandPromises = Object.entries(rawSources).map(expandSource);
-
-  function expandSource([key, source]) {
-    // If no .url, return a shallow copy of the input. 
-    // Note: some properties may still be pointing back to the original 
-    // style document, like .vector_layers, .bounds, .center, .extent
-    if (source.type === "geojson") return getJSON(source.data)
-      .then(JSON => [key,Object.assign(JSON, source)]);
-    if (source.url === undefined) return [key, Object.assign({}, source)];
-
-    // Load the referenced TileJSON document, add any values from source
-    return getJSON( expandTileURL(source.url, token) )
-      .then( tileJson => [key, Object.assign(tileJson, source)] );
-  }
-
-  function combineSources(keySourcePairs) {
-    const sources = {};
-    keySourcePairs.forEach( ([key, val]) => { sources[key] = val; } );
-    return sources;
-  }
-
-  return Promise.all( expandPromises ).then( combineSources );
-}
-
-function loadSprite(sprite, token) {
-  if (!sprite) return;
-
-  const urls = expandSpriteURLs(sprite, token);
-
-  return Promise.all([getImage(urls.image), getJSON(urls.meta)])
-    .then( ([image, meta]) => ({ image, meta }) );
 }
 
 export { getStyleFuncs, loadStyle, parseLayer, parseStyle };
