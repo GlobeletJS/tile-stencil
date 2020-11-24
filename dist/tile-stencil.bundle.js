@@ -533,14 +533,41 @@ function hsl2rgb(h, m1, m2) {
       : m1) * 255;
 }
 
-function buildInterpFunc(base, sampleVal) {
-  // Return a function to interpolate the value of y(x), given endpoints
-  // p0 = (x0, y0) and p2 = (x1, y1)
+function buildInterpolator(stops, base = 1) {
+  if (!stops || stops.length < 2 || stops[0].length !== 2) return;
+
+  // Confirm stops are all the same type, and convert colors to arrays
+  const type = getType(stops[0][1]);
+  if (!stops.every(s => getType(s[1]) !== type)) return;
+  stops = stops.map(([x, y]) => [x, convertIfColor(y)]);
+
+  const izm = stops.length - 1;
 
   const scale = getScale(base);
-  const interpolate = getInterpolator(sampleVal);
+  const interpolate = getInterpolator(type);
 
-  return (p0, x, p1) => interpolate( p0[1], scale(p0[0], x, p1[0]), p1[1] );
+  return function(x) {
+    let iz = stops.findIndex(stop => stop[0] > x);
+
+    if (iz === 0) return stops[0][1]; // x is below first stop
+    if (iz < 0) return stops[izm][1]; // x is above last stop
+
+    let [x0, y0] = stops[iz - 1];
+    let [x1, y1] = stops[iz];
+
+    return interpolate(y0, scale(x0, x, x1), y1);
+  }
+}
+
+function getType(v) {
+  return color(v) ? "color" : typeof v;
+}
+
+function convertIfColor(val) {
+  // Convert CSS color strings to clamped RGBA arrays for WebGL
+  if (!color(val)) return val;
+  let c = rgb(val);
+  return [c.r / 255, c.g / 255, c.b / 255, c.opacity];
 }
 
 function getScale(base) {
@@ -558,101 +585,69 @@ function getScale(base) {
     : scale(a, x, b);
 }
 
-function getInterpolator(sampleVal) {
+function getInterpolator(type) {
   // Return a function to find an interpolated value between end values v1, v2,
   // given relative position t between the two end positions
-
-  var type = typeof sampleVal;
-  if (type === "string" && color(sampleVal)) type = "color";
 
   switch (type) {
     case "number": // Linear interpolator
       return (v1, t, v2) => v1 + t * (v2 - v1);
 
     case "color":  // Interpolate RGBA
-      return (v1, t, v2) => 
-        interpColor( rgb(v1), t, rgb(v2) );
+      return (v1, t, v2) =>
+        v1.map((v, i) => v + t * (v2[i] - v));
 
     default:       // Assume step function
       return (v1, t, v2) => v1;
   }
 }
 
-function interpColor(c0, t, c1) {
-  // Inputs c0, c1 are rgb color objects as returned by d3.rgb
-  const interpFloat = (a, b) => a + t * (b - a);
-  const interpInteger = (a, b) => Math.round(interpFloat(a, b));
-
-  return "rgba(" +
-    interpInteger(c0.r, c1.r) + ", " +
-    interpInteger(c0.g, c1.g) + ", " + 
-    interpInteger(c0.b, c1.b) + ", " +
-    interpFloat(c0.a, c1.a) + ")";
-}
-
 function autoGetters(properties = {}, defaults) {
-  const getters = {};
-  Object.keys(defaults).forEach(key => {
-    getters[key] = buildStyleFunc(properties[key], defaults[key]);
-  });
-  return getters;
+  return Object.entries(defaults).reduce((d, [key, val]) => {
+    d[key] = buildStyleFunc(properties[key], val);
+    return d;
+  }, {});
 }
 
 function buildStyleFunc(style, defaultVal) {
-  var styleFunc, getArg;
-
   if (style === undefined) {
-    styleFunc = () => defaultVal;
-    styleFunc.type = "constant";
+    return getConstFunc(defaultVal);
 
   } else if (typeof style !== "object" || Array.isArray(style)) {
-    styleFunc = () => style;
-    styleFunc.type = "constant";
-
-  } else if (!style.property || style.property === "zoom") {
-    getArg = (zoom, feature) => zoom;
-    styleFunc = getStyleFunc(style, getArg);
-    styleFunc.type = "zoom";
+    return getConstFunc(style);
 
   } else {
-    let propertyName = style.property;
-    getArg = (zoom, feature) => feature.properties[propertyName];
-    styleFunc = getStyleFunc(style, getArg);
-    styleFunc.type = "property";
-    styleFunc.property = propertyName;
+    return getStyleFunc(style);
 
   } // NOT IMPLEMENTED: zoom-and-property functions
-
-  return styleFunc;
 }
 
-function getStyleFunc(style, getArg) {
-  if (style.type === "identity") return getArg;
-
-  // We should be building a stop function now. Make sure we have enough info
-  var stops = style.stops;
-  if (!stops || stops.length < 2 || stops[0].length !== 2) {
-    console.log("buildStyleFunc: style = " + JSON.stringify(style));
-    console.log("ERROR in buildStyleFunc: failed to understand style!");
-    return;
-  }
-
-  var stopFunc = buildStopFunc(stops, style.base);
-  return (zoom, feature) => stopFunc( getArg(zoom, feature) );
+function getConstFunc(rawVal) {
+  const val = convertIfColor(rawVal);
+  const func = () => val;
+  return Object.assign(func, { type: "constant" });
 }
 
-function buildStopFunc(stops, base = 1) {
-  const izm = stops.length - 1;
-  const interpolateVal = buildInterpFunc(base, stops[0][1]);
+function getStyleFunc(style) {
+  const { type, property = "zoom", base = 1, stops } = style;
 
-  return function(x) {
-    let iz = stops.findIndex(stop => stop[0] > x);
+  const getArg = (property === "zoom")
+    ? (zoom, feature) => zoom
+    : (zoom, feature) => feature.properties[property];
 
-    if (iz === 0) return stops[0][1]; // x is below first stop
-    if (iz < 0) return stops[izm][1]; // x is above last stop
+  const getVal = (type === "identity")
+    ? convertIfColor
+    : buildInterpolator(stops, base);
 
-    return interpolateVal(stops[iz-1], x, stops[iz]);
-  }
+  if (!getVal) return console.log("style: " + JSON.stringify(style) + 
+    "\nERROR in tile-stencil: unsupported style!");
+
+  const styleFunc = (zoom, feature) => getVal(getArg(zoom, feature));
+
+  return Object.assign(styleFunc, {
+    type: (property === "zoom") ? "zoom" : "property",
+    property,
+  });
 }
 
 const layoutDefaults = {

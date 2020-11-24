@@ -1,66 +1,49 @@
-import { buildInterpFunc } from "./interpolate.js";
+import { convertIfColor, buildInterpolator } from "./interpolate.js";
 
 export function autoGetters(properties = {}, defaults) {
-  const getters = {};
-  Object.keys(defaults).forEach(key => {
-    getters[key] = buildStyleFunc(properties[key], defaults[key]);
-  });
-  return getters;
+  return Object.entries(defaults).reduce((d, [key, val]) => {
+    d[key] = buildStyleFunc(properties[key], val);
+    return d;
+  }, {});
 }
 
 function buildStyleFunc(style, defaultVal) {
-  var styleFunc, getArg;
-
   if (style === undefined) {
-    styleFunc = () => defaultVal;
-    styleFunc.type = "constant";
+    return getConstFunc(defaultVal);
 
   } else if (typeof style !== "object" || Array.isArray(style)) {
-    styleFunc = () => style;
-    styleFunc.type = "constant";
-
-  } else if (!style.property || style.property === "zoom") {
-    getArg = (zoom, feature) => zoom;
-    styleFunc = getStyleFunc(style, getArg);
-    styleFunc.type = "zoom";
+    return getConstFunc(style);
 
   } else {
-    let propertyName = style.property;
-    getArg = (zoom, feature) => feature.properties[propertyName];
-    styleFunc = getStyleFunc(style, getArg);
-    styleFunc.type = "property";
-    styleFunc.property = propertyName;
+    return getStyleFunc(style);
 
   } // NOT IMPLEMENTED: zoom-and-property functions
-
-  return styleFunc;
 }
 
-function getStyleFunc(style, getArg) {
-  if (style.type === "identity") return getArg;
-
-  // We should be building a stop function now. Make sure we have enough info
-  var stops = style.stops;
-  if (!stops || stops.length < 2 || stops[0].length !== 2) {
-    console.log("buildStyleFunc: style = " + JSON.stringify(style));
-    console.log("ERROR in buildStyleFunc: failed to understand style!");
-    return;
-  }
-
-  var stopFunc = buildStopFunc(stops, style.base);
-  return (zoom, feature) => stopFunc( getArg(zoom, feature) );
+function getConstFunc(rawVal) {
+  const val = convertIfColor(rawVal);
+  const func = () => val;
+  return Object.assign(func, { type: "constant" });
 }
 
-function buildStopFunc(stops, base = 1) {
-  const izm = stops.length - 1;
-  const interpolateVal = buildInterpFunc(base, stops[0][1]);
+function getStyleFunc(style) {
+  const { type, property = "zoom", base = 1, stops } = style;
 
-  return function(x) {
-    let iz = stops.findIndex(stop => stop[0] > x);
+  const getArg = (property === "zoom")
+    ? (zoom, feature) => zoom
+    : (zoom, feature) => feature.properties[property];
 
-    if (iz === 0) return stops[0][1]; // x is below first stop
-    if (iz < 0) return stops[izm][1]; // x is above last stop
+  const getVal = (type === "identity")
+    ? convertIfColor
+    : buildInterpolator(stops, base);
 
-    return interpolateVal(stops[iz-1], x, stops[iz]);
-  }
+  if (!getVal) return console.log("style: " + JSON.stringify(style) + 
+    "\nERROR in tile-stencil: unsupported style!");
+
+  const styleFunc = (zoom, feature) => getVal(getArg(zoom, feature));
+
+  return Object.assign(styleFunc, {
+    type: (property === "zoom") ? "zoom" : "property",
+    property,
+  });
 }

@@ -123,7 +123,7 @@ parseLayer.
 ## Un-supported features
 tile-stencil does not implement the following features of the style
 specification:
-- GeoJSON, image, or video sources
+- Image or video sources
 - [Zoom-and-property functions](https://docs.mapbox.com/mapbox-gl-js/style-spec/#types-function-zoom-property)
 - [Expressions](https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions)
 
