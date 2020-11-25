@@ -538,7 +538,7 @@ function buildInterpolator(stops, base = 1) {
 
   // Confirm stops are all the same type, and convert colors to arrays
   const type = getType(stops[0][1]);
-  if (!stops.every(s => getType(s[1]) !== type)) return;
+  if (!stops.every(s => getType(s[1]) === type)) return;
   stops = stops.map(([x, y]) => [x, convertIfColor(y)]);
 
   const izm = stops.length - 1;
