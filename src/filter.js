@@ -1,12 +1,10 @@
 export function buildFeatureFilter(filterObj) {
   // filterObj is a filter definition following the "deprecated" syntax:
-  // https://docs.mapbox.com/mapbox-gl-js/style-spec/#other-filter
+  // https://maplibre.org/maplibre-gl-js-docs/style-spec/other/#other-filter
   if (!filterObj) return () => true;
-
-  var type, key, vals;
+  const [type, ...vals] = filterObj;
 
   // If this is a combined filter, the vals are themselves filter definitions
-  [type, ...vals] = filterObj;
   switch (type) {
     case "all": {
       let filters = vals.map(buildFeatureFilter);  // Iteratively recursive!
@@ -20,11 +18,14 @@ export function buildFeatureFilter(filterObj) {
       let filters = vals.map(buildFeatureFilter);
       return (d) => filters.every( filt => !filt(d) );
     }
-    default: break; // Must be a simple filter
+    default:
+      return getSimpleFilter(filterObj);
   }
+}
 
-  [type, key, ...vals] = filterObj;
-  var getVal = initFeatureValGetter(key);
+function getSimpleFilter(filterObj) {
+  const [type, key, ...vals] = filterObj;
+  const getVal = initFeatureValGetter(key);
 
   switch (type) {
     // Existential Filters

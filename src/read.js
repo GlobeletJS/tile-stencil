@@ -8,15 +8,22 @@ export function getJSON(data) {
 
     case "string":
       // data must be a URL
-      return fetch(data).then(response => {
-        return (response.ok)
-          ? response.json()
-          : Promise.reject(response);
-      });
+      return (data.length)
+        ? fetch(data).then(checkFetch)
+        : Promise.reject("tile-stencil: getJSON called with empty string!");
 
     default:
       return Promise.reject(data);
   }
+}
+
+function checkFetch(response) {
+  if (!response.ok) {
+    const err = ["HTTP", response.status, response.statusText].join(" ");
+    return Promise.reject(err);
+  }
+
+  return response.json();
 }
 
 export function getImage(href) {

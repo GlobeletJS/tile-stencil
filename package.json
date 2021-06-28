@@ -1,7 +1,7 @@
 {
   "name": "tile-stencil",
   "version": "0.3.1",
-  "description": "Load a Mapbox style document and parse it into Javascript functions",
+  "description": "Load a MapLibre style document and parse it into Javascript functions",
   "main": "dist/tile-stencil.js",
   "module": "src/index.js",
   "files": [

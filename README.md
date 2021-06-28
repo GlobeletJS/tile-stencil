@@ -2,12 +2,12 @@
 
 Load a MapLibre style document and parse it into Javascript functions
 
-[MapLibre style documents][] describe how a map should be drawn. The document
-begins with input information, such as:
+[MapLibre style documents][MapLibre style] describe how a map should be drawn. 
+The document begins with input information, such as:
 - [Data sources][] to be used (tiles, GeoJSON, etc.)
 - Where to get [sprites][]  (small images used as labels)
 
-Then, it specifies a list of [layers][], in the order in which they should be
+Then, it specifies a list of [layers][layer], in the order in which they should be
 drawn. Layers further down the list are drawn on top of the earlier layers.
 For each layer, the style document describes:
 - Which data source to use
@@ -22,10 +22,10 @@ tile-stencil reads the document, loads relevant data about the source, loads
 the sprite data, and parses the specified filters and property functions into 
 Javascript functions that can be used by a renderer.
 
-[MapLibre style documents]: https://maplibre.org/maplibre-gl-js-docs/style-spec/
+[MapLibre style]: https://maplibre.org/maplibre-gl-js-docs/style-spec/
 [Data sources]: https://maplibre.org/maplibre-gl-js-docs/style-spec/sources/
 [sprites]: https://maplibre.org/maplibre-gl-js-docs/style-spec/sprite/
-[layers]: https://maplibre.org/maplibre-gl-js-docs/style-spec/layers/
+[layer]: https://maplibre.org/maplibre-gl-js-docs/style-spec/layers/
 
 
 ## Installation
@@ -34,11 +34,10 @@ tile-stencil is provided as an ESM import.
 import * as tileStencil from 'tile-stencil';
 ```
 
-tileStencil exposes four methods:
+tileStencil exposes three methods:
 - getStyleFuncs
-- parseLayer
 - loadStyle
-- parseStyle
+- buildFeatureFilter
 
 ## getStyleFuncs
 
@@ -73,15 +72,6 @@ where `.type` may take one of three values:
 - `zoom`: Style value depends on the map zoom level
 - `property`: Style value depends on feature properties
 
-## parseLayer
-Like getStyleFuncs, but also parses the input layer's `.filter` property.
-
-The `.filter` property on the returned object can be used to filter features
-to the appropriate subset to be used in rendering this layer, e.g.,
-```javascript
-layerFeatures = features.filter(parsedLayer.filter);
-```
-
 ## loadStyle
 Loads a style document and any linked information
 
@@ -113,9 +103,19 @@ The parsed document will have the following changes relative to the input:
   from another layer. The layers in the parsed document will have these
   references resolved, so that the returned document is standards-compliant. 
 
-## parseStyle
-Like loadStyle, but each layer in the returned document is processed through
-parseLayer.
+## buildFeatureFilter
+Converts the filter description from a [MapLibre layer][layer] into a 
+JavaScript function for filtering GeoJSON features.
+
+The returned function can be used to filter features to the appropriate subset
+to be used in rendering this layer, e.g.,
+```javascript
+const parsedFilter = buildFeatureFilter(layer.filter);
+layerFeatures = features.filter(parsedFilter);
+```
+
+Note: the supplied filter description MUST follow the 
+[deprecated syntax][filter]!
 
 [Promise]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 [TileJSON]: https://github.com/mapbox/tilejson-spec
@@ -132,6 +132,7 @@ following older features:
 - [functions](https://maplibre.org/maplibre-gl-js-docs/style-spec/other/#function)
   for describing the dependence of a style value on zoom level or feature
   properties. But note: zoom-and-property functions are not implemented!
-- [filters](https://maplibre.org/maplibre-gl-js-docs/style-spec/other/#other-filter)
-  for defining the subset of a source-layer's features to be used in the
-  current layer
+- [filters][filter] for defining the subset of a source-layer's features to be 
+  used in the current layer
+
+[filter]: https://maplibre.org/maplibre-gl-js-docs/style-spec/other/#other-filter

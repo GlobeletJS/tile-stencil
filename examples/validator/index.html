@@ -8,35 +8,31 @@
   </head>
 
   <body>
-    <label for="stylehref">URL to your
+    <label for="href">URL to your
       <a href="https://maplibre.org/maplibre-gl-js-docs/style-spec/">MapLibre Style</a>
-      </label>
+    </label>
     <br>
-    <input type="text" placeholder="https://..." id="stylehref">
-    <button id="sendStyle">Load Style</button>
+    <input type="text" placeholder="https://..." id="href" />
+    <button id="send">Load Style</button>
 
-    <p>Error messages:</p>
-    <pre id="errors"></pre>
-
-    <p>See the parsed JSON here:</p>
-    <pre id="styleDisplay"></pre>
+    <p>See the result here:</p>
+    <pre id="result"></pre>
   </body>
 
   <script type="module">
     import { loadStyle } from "../../dist/tile-stencil.js";
 
-    const styleInput = document.getElementById("stylehref");
-    const errors = document.getElementById("errors");
-    const styleDisplay = document.getElementById("styleDisplay");
+    const href = document.getElementById("href");
+    const result = document.getElementById("result");
 
-    document.getElementById("sendStyle")
+    document.getElementById("send")
       .addEventListener('click', getStyle, false);
-    
+
     function getStyle() {
-      loadStyle(styleInput.value).then(doc => {
-        styleDisplay.innerHTML = JSON.stringify(doc, null, 2);
+      loadStyle(href.value).then(doc => {
+        result.innerHTML = JSON.stringify(doc, null, 2);
       }).catch(err => {
-        errors.innerHTML = err.statusText;
+        result.innerHTML = err;
       });
     }
   </script>

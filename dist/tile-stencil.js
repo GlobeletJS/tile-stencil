@@ -47,15 +47,22 @@ function getJSON(data) {
 
     case "string":
       // data must be a URL
-      return fetch(data).then(response => {
-        return (response.ok)
-          ? response.json()
-          : Promise.reject(response);
-      });
+      return (data.length)
+        ? fetch(data).then(checkFetch)
+        : Promise.reject("tile-stencil: getJSON called with empty string!");
 
     default:
       return Promise.reject(data);
   }
+}
+
+function checkFetch(response) {
+  if (!response.ok) {
+    const err = ["HTTP", response.status, response.statusText].join(" ");
+    return Promise.reject(err);
+  }
+
+  return response.json();
 }
 
 function getImage(href) {
@@ -72,84 +79,6 @@ function getImage(href) {
     img.crossOrigin = "anonymous";
     img.src = href;
   });
-}
-
-function buildFeatureFilter(filterObj) {
-  // filterObj is a filter definition following the "deprecated" syntax:
-  // https://docs.mapbox.com/mapbox-gl-js/style-spec/#other-filter
-  if (!filterObj) return () => true;
-
-  var type, key, vals;
-
-  // If this is a combined filter, the vals are themselves filter definitions
-  [type, ...vals] = filterObj;
-  switch (type) {
-    case "all": {
-      let filters = vals.map(buildFeatureFilter);  // Iteratively recursive!
-      return (d) => filters.every( filt => filt(d) );
-    }
-    case "any": {
-      let filters = vals.map(buildFeatureFilter);
-      return (d) => filters.some( filt => filt(d) );
-    }
-    case "none": {
-      let filters = vals.map(buildFeatureFilter);
-      return (d) => filters.every( filt => !filt(d) );
-    }
-  }
-
-  [type, key, ...vals] = filterObj;
-  var getVal = initFeatureValGetter(key);
-
-  switch (type) {
-    // Existential Filters
-    case "has": 
-      return d => !!getVal(d); // !! forces a Boolean return
-    case "!has": 
-      return d => !getVal(d);
-
-    // Comparison Filters
-    case "==": 
-      return d => getVal(d) === vals[0];
-    case "!=":
-      return d => getVal(d) !== vals[0];
-    case ">":
-      return d => getVal(d) > vals[0];
-    case ">=":
-      return d => getVal(d) >= vals[0];
-    case "<":
-      return d => getVal(d) < vals[0];
-    case "<=":
-      return d => getVal(d) <= vals[0];
-
-    // Set Membership Filters
-    case "in" :
-      return d => vals.includes( getVal(d) );
-    case "!in" :
-      return d => !vals.includes( getVal(d) );
-    default:
-      console.log("prepFilter: unknown filter type = " + filterObj[0]);
-  }
-  // No recognizable filter criteria. Return a filter that is always true
-  return () => true;
-}
-
-function initFeatureValGetter(key) {
-  switch (key) {
-    case "$type":
-      // NOTE: data includes MultiLineString, MultiPolygon, etc-NOT IN SPEC
-      return f => {
-        let t = f.geometry.type;
-        if (t === "MultiPoint") return "Point";
-        if (t === "MultiLineString") return "LineString";
-        if (t === "MultiPolygon") return "Polygon";
-        return t;
-      };
-    case "$id":
-      return f => f.id;
-    default:
-      return f => f.properties[key];
-  }
 }
 
 function define(constructor, factory, prototype) {
@@ -930,23 +859,92 @@ function loadSprite(sprite, token) {
     .then( ([image, meta]) => ({ image, meta }) );
 }
 
+function buildFeatureFilter(filterObj) {
+  // filterObj is a filter definition following the "deprecated" syntax:
+  // https://maplibre.org/maplibre-gl-js-docs/style-spec/other/#other-filter
+  if (!filterObj) return () => true;
+  const [type, ...vals] = filterObj;
+
+  // If this is a combined filter, the vals are themselves filter definitions
+  switch (type) {
+    case "all": {
+      let filters = vals.map(buildFeatureFilter);  // Iteratively recursive!
+      return (d) => filters.every( filt => filt(d) );
+    }
+    case "any": {
+      let filters = vals.map(buildFeatureFilter);
+      return (d) => filters.some( filt => filt(d) );
+    }
+    case "none": {
+      let filters = vals.map(buildFeatureFilter);
+      return (d) => filters.every( filt => !filt(d) );
+    }
+    default:
+      return getSimpleFilter(filterObj);
+  }
+}
+
+function getSimpleFilter(filterObj) {
+  const [type, key, ...vals] = filterObj;
+  const getVal = initFeatureValGetter(key);
+
+  switch (type) {
+    // Existential Filters
+    case "has": 
+      return d => !!getVal(d); // !! forces a Boolean return
+    case "!has": 
+      return d => !getVal(d);
+
+    // Comparison Filters
+    case "==": 
+      return d => getVal(d) === vals[0];
+    case "!=":
+      return d => getVal(d) !== vals[0];
+    case ">":
+      return d => getVal(d) > vals[0];
+    case ">=":
+      return d => getVal(d) >= vals[0];
+    case "<":
+      return d => getVal(d) < vals[0];
+    case "<=":
+      return d => getVal(d) <= vals[0];
+
+    // Set Membership Filters
+    case "in" :
+      return d => vals.includes( getVal(d) );
+    case "!in" :
+      return d => !vals.includes( getVal(d) );
+    default:
+      console.log("prepFilter: unknown filter type = " + filterObj[0]);
+  }
+  // No recognizable filter criteria. Return a filter that is always true
+  return () => true;
+}
+
+function initFeatureValGetter(key) {
+  switch (key) {
+    case "$type":
+      // NOTE: data includes MultiLineString, MultiPolygon, etc-NOT IN SPEC
+      return f => {
+        let t = f.geometry.type;
+        if (t === "MultiPoint") return "Point";
+        if (t === "MultiLineString") return "LineString";
+        if (t === "MultiPolygon") return "Polygon";
+        return t;
+      };
+    case "$id":
+      return f => f.id;
+    default:
+      return f => f.properties[key];
+  }
+}
+
 function getStyleFuncs(inputLayer) {
   const layer = Object.assign({}, inputLayer); // Leave input unchanged
 
   // Replace rendering properties with functions
   layer.layout = autoGetters(layer.layout, layoutDefaults[layer.type]);
   layer.paint  = autoGetters(layer.paint,  paintDefaults[layer.type] );
-
-  return layer;
-}
-
-function parseLayer(inputLayer) {
-  // Like getStyleFuncs, but also parses the filter. DEPRECATED
-  const layer = Object.assign({}, inputLayer); // Leave input unchanged
-
-  layer.layout = autoGetters(layer.layout, layoutDefaults[layer.type]);
-  layer.paint  = autoGetters(layer.paint,  paintDefaults[layer.type] );
-  layer.filter = buildFeatureFilter(layer.filter);
 
   return layer;
 }
@@ -958,21 +956,25 @@ function loadStyle(style, mapboxToken) {
     ? Promise.resolve(style)                // style is JSON already
     : getJSON( expandStyleURL(style, mapboxToken) ); // Get from URL
 
-  return getStyle
+  return getStyle.then(checkStyle)
     .then( styleDoc => loadLinks(styleDoc, mapboxToken) );
 }
 
-function parseStyle(style, mapboxToken) {
-  // Like loadStyle, but also parses layers. DEPRECATED
+function checkStyle(doc) {
+  const { version, sources, layers } = doc;
 
-  const getStyleJson = (typeof style === "object")
-    ? Promise.resolve(style)                // style is JSON already
-    : getJSON( expandStyleURL(style, mapboxToken) ); // Get from URL
+  const error =
+    (typeof sources !== "object" || sources === null || Array.isArray(sources))
+    ? "missing sources object"
+    : (!Array.isArray(layers))
+    ? "missing layers array"
+    : (version !== 8)
+    ? "unsupported version number"
+    : null;
 
-  return getStyleJson
-    .then( rawStyle => Object.assign({}, rawStyle) ) // Leave input unchanged
-    .then( styleDoc => loadLinks(styleDoc, mapboxToken) )
-    .then( style => { style.layers = style.layers.map(parseLayer); } );
+  return (error)
+    ? Promise.reject("Error parsing style: " + error)
+    : doc;
 }
 
-export { getStyleFuncs, loadStyle, parseLayer, parseStyle };
+export { buildFeatureFilter, getStyleFuncs, loadStyle };
