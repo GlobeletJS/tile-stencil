@@ -44,8 +44,8 @@ function getGeoJSON(data) {
 
   return dataPromise.then(json => {
     // Is it valid GeoJSON? For now, just check for a .type property
-    return (data.type)
-      ? data
+    return (json.type)
+      ? json
       : Promise.reject("invalid GeoJSON: " + JSON.stringify(json));
   });
 }
