@@ -1,6 +1,6 @@
 import { derefLayers } from "./deref.js";
 import { expandSpriteURLs, expandGlyphURL, expandTileURL } from "./mapbox.js";
-import { getJSON, getImage } from "./read.js";
+import { getGeoJSON, getJSON, getImage } from "./read.js";
 
 export function loadLinks(styleDoc, mapboxToken) {
   styleDoc.layers = derefLayers(styleDoc.layers);
@@ -23,7 +23,7 @@ function expandSources(rawSources, token) {
 
   function expandSource([key, source]) {
     if (source.type === "geojson") {
-      return getJSON(source.data).then(JSON => {
+      return getGeoJSON(source.data).then(JSON => {
         source.data = JSON;
         return [key, source];
       });

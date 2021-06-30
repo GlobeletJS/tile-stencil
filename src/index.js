@@ -39,7 +39,5 @@ function checkStyle(doc) {
     ? "unsupported version number"
     : null;
 
-  return (error)
-    ? Promise.reject("Error parsing style: " + error)
-    : doc;
+  return (error) ? Promise.reject(error) : doc;
 }

@@ -1,20 +1,20 @@
-export function getJSON(data) {
-  switch (typeof data) {
-    case "object":
-      // data may be GeoJSON already. Confirm and return
-      return (data !== null && data.type)
-        ? Promise.resolve(data)
-        : Promise.reject(data);
+export function getGeoJSON(data) {
+  const dataPromise = (typeof data === "object" && data !== null)
+    ? Promise.resolve(data)
+    : getJSON(data); // data may be a URL. Try loading it
 
-    case "string":
-      // data must be a URL
-      return (data.length)
-        ? fetch(data).then(checkFetch)
-        : Promise.reject("tile-stencil: getJSON called with empty string!");
+  return dataPromise.then(json => {
+    // Is it valid GeoJSON? For now, just check for a .type property
+    return (data.type)
+      ? data
+      : Promise.reject("invalid GeoJSON: " + JSON.stringify(json));
+  });
+}
 
-    default:
-      return Promise.reject(data);
-  }
+export function getJSON(href) {
+  return (typeof href === "string" && href.length)
+    ? fetch(href).then(checkFetch)
+    : Promise.reject("invalid URL: " + JSON.stringify(href));
 }
 
 function checkFetch(response) {
