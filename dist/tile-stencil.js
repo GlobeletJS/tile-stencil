@@ -1,22 +1,22 @@
 function expandStyleURL(url, token) {
-  var prefix = /^mapbox:\/\/styles\//;
+  const prefix = /^mapbox:\/\/styles\//;
   if ( !url.match(prefix) ) return url;
-  var apiRoot = "https://api.mapbox.com/styles/v1/";
+  const apiRoot = "https://api.mapbox.com/styles/v1/";
   return url.replace(prefix, apiRoot) + "?access_token=" + token;
 }
 
 function expandSpriteURLs(url, token) {
   // Returns an array containing urls to .png and .json files
-  var prefix = /^mapbox:\/\/sprites\//;
+  const prefix = /^mapbox:\/\/sprites\//;
   if ( !url.match(prefix) ) return {
     image: url + ".png", 
     meta: url + ".json",
   };
 
   // We have a Mapbox custom url. Expand to an absolute URL, as per the spec
-  var apiRoot = "https://api.mapbox.com/styles/v1/";
+  const apiRoot = "https://api.mapbox.com/styles/v1/";
   url = url.replace(prefix, apiRoot) + "/sprite";
-  var tokenString = "?access_token=" + token;
+  const tokenString = "?access_token=" + token;
   return {
     image: url + ".png" + tokenString, 
     meta: url + ".json" + tokenString,
@@ -24,16 +24,16 @@ function expandSpriteURLs(url, token) {
 }
 
 function expandTileURL(url, token) {
-  var prefix = /^mapbox:\/\//;
+  const prefix = /^mapbox:\/\//;
   if ( !url.match(prefix) ) return url;
-  var apiRoot = "https://api.mapbox.com/v4/";
+  const apiRoot = "https://api.mapbox.com/v4/";
   return url.replace(prefix, apiRoot) + ".json?secure&access_token=" + token;
 }
 
 function expandGlyphURL(url, token) {
-  var prefix = /^mapbox:\/\/fonts\//;
+  const prefix = /^mapbox:\/\/fonts\//;
   if ( !url.match(prefix) ) return url;
-  var apiRoot = "https://api.mapbox.com/fonts/v1/";
+  const apiRoot = "https://api.mapbox.com/fonts/v1/";
   return url.replace(prefix, apiRoot) + "?access_token=" + token;
 }
 
@@ -46,35 +46,35 @@ function getGeoJSON(data) {
     // Is it valid GeoJSON? For now, just check for a .type property
     return (json.type)
       ? json
-      : Promise.reject("invalid GeoJSON: " + JSON.stringify(json));
+      : Promise.reject(Error("invalid GeoJSON: " + JSON.stringify(json)));
   });
 }
 
 function getJSON(href) {
   return (typeof href === "string" && href.length)
     ? fetch(href).then(checkFetch)
-    : Promise.reject("invalid URL: " + JSON.stringify(href));
+    : Promise.reject(Error("invalid URL: " + JSON.stringify(href)));
 }
 
 function checkFetch(response) {
   if (!response.ok) {
-    const err = ["HTTP", response.status, response.statusText].join(" ");
-    return Promise.reject(err);
+    const { status, statusText, url } = response;
+    const message = ["HTTP", status, statusText, "for URL", url].join(" ");
+    return Promise.reject(Error(message));
   }
 
   return response.json();
 }
 
 function getImage(href) {
-  const errMsg = "ERROR in getImage for href " + href;
   const img = new Image();
 
   return new Promise( (resolve, reject) => {
-    img.onerror = () => reject(errMsg);
+    img.onerror = () => reject(Error("Failed to retrieve image from " + href));
 
     img.onload = () => (img.complete && img.naturalWidth !== 0)
         ? resolve(img)
-        : reject(errMsg);
+        : reject(Error("Incomplete image received from " + href));
 
     img.crossOrigin = "anonymous";
     img.src = href;
@@ -805,18 +805,18 @@ function deref(layer, parent) {
 }
 
 function loadLinks(styleDoc, mapboxToken) {
-  styleDoc.layers = derefLayers(styleDoc.layers);
-  if (styleDoc.glyphs) {
-    styleDoc.glyphs = expandGlyphURL(styleDoc.glyphs, mapboxToken);
+  const { sources: rawSources, glyphs, sprite, layers } = styleDoc;
+
+  styleDoc.layers = derefLayers(layers);
+  if (glyphs) {
+    styleDoc.glyphs = expandGlyphURL(glyphs, mapboxToken);
   }
 
   return Promise.all([
-    expandSources(styleDoc.sources, mapboxToken),
-    loadSprite(styleDoc.sprite, mapboxToken),
-  ]).then( ([sources, spriteData]) => {
-    styleDoc.sources = sources;
-    styleDoc.spriteData = spriteData;
-    return styleDoc;
+    expandSources(rawSources, mapboxToken),
+    loadSprite(sprite, mapboxToken),
+  ]).then(([sources, spriteData]) => {
+    return Object.assign(styleDoc, { sources, spriteData });
   });
 }
 
@@ -824,30 +824,34 @@ function expandSources(rawSources, token) {
   const expandPromises = Object.entries(rawSources).map(expandSource);
 
   function expandSource([key, source]) {
-    if (source.type === "geojson") {
-      return getGeoJSON(source.data).then(JSON => {
-        source.data = JSON;
-        return [key, source];
-      });
+    const { type, url } = source;
+
+    const infoPromise =
+      (type === "geojson") ? getGeoJSON(source.data).then(data => ({ data }))
+      : (url) ? getJSON(expandTileURL(url, token)) // Get linked TileJSON
+      : Promise.resolve({}); // No linked info
+
+    return infoPromise.then(info => {
+      // Assign everything to a new object for return.
+      // Note: shallow copy! Some properties may point back to the original
+      // style document, like .vector_layers, .bounds, .center, .extent
+      const updatedSource = Object.assign({}, source, info);
+      return { [key]: updatedSource };
+    });
+  }
+
+  return Promise.allSettled(expandPromises)
+    .then(results => results.reduce(processResult, {}));
+
+  function processResult(sources, result) {
+    if (result.status === "fulfilled") {
+      return Object.assign(sources, result.value);
+    } else {
+      // If one source fails to load, just log the reason and move on
+      warn("Error loading sources: " + result.reason.message);
+      return sources;
     }
-
-    // If no .url, return a shallow copy of the input. 
-    // Note: some properties may still be pointing back to the original 
-    // style document, like .vector_layers, .bounds, .center, .extent
-    if (source.url === undefined) return [key, Object.assign({}, source)];
-
-    // Load the referenced TileJSON document, add any values from source
-    return getJSON( expandTileURL(source.url, token) )
-      .then( tileJson => [key, Object.assign(tileJson, source)] );
   }
-
-  function combineSources(keySourcePairs) {
-    const sources = {};
-    keySourcePairs.forEach( ([key, val]) => { sources[key] = val; } );
-    return sources;
-  }
-
-  return Promise.all( expandPromises ).then( combineSources );
 }
 
 function loadSprite(sprite, token) {
@@ -856,7 +860,17 @@ function loadSprite(sprite, token) {
   const urls = expandSpriteURLs(sprite, token);
 
   return Promise.all([getImage(urls.image), getJSON(urls.meta)])
-    .then( ([image, meta]) => ({ image, meta }) );
+    .then( ([image, meta]) => ({ image, meta }) )
+    .catch(err => {
+      // If sprite doesn't load, just log the error and move on
+      warn("Error loading sprite: " + err.message);
+    });
+}
+
+function warn(message) {
+  console.log("tile-stencil had a problem loading part of the style document");
+  console.log("  " + message);
+  console.log("  Not a fatal error. Proceeding with the rest of the style...");
 }
 
 function buildFeatureFilter(filterObj) {

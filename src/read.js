@@ -7,35 +7,35 @@ export function getGeoJSON(data) {
     // Is it valid GeoJSON? For now, just check for a .type property
     return (json.type)
       ? json
-      : Promise.reject("invalid GeoJSON: " + JSON.stringify(json));
+      : Promise.reject(Error("invalid GeoJSON: " + JSON.stringify(json)));
   });
 }
 
 export function getJSON(href) {
   return (typeof href === "string" && href.length)
     ? fetch(href).then(checkFetch)
-    : Promise.reject("invalid URL: " + JSON.stringify(href));
+    : Promise.reject(Error("invalid URL: " + JSON.stringify(href)));
 }
 
 function checkFetch(response) {
   if (!response.ok) {
-    const err = ["HTTP", response.status, response.statusText].join(" ");
-    return Promise.reject(err);
+    const { status, statusText, url } = response;
+    const message = ["HTTP", status, statusText, "for URL", url].join(" ");
+    return Promise.reject(Error(message));
   }
 
   return response.json();
 }
 
 export function getImage(href) {
-  const errMsg = "ERROR in getImage for href " + href;
   const img = new Image();
 
   return new Promise( (resolve, reject) => {
-    img.onerror = () => reject(errMsg);
+    img.onerror = () => reject(Error("Failed to retrieve image from " + href));
 
     img.onload = () => (img.complete && img.naturalWidth !== 0)
         ? resolve(img)
-        : reject(errMsg);
+        : reject(Error("Incomplete image received from " + href));
 
     img.crossOrigin = "anonymous";
     img.src = href;

@@ -73,7 +73,11 @@ where `.type` may take one of three values:
 - `property`: Style value depends on feature properties
 
 ## loadStyle
-Loads a style document and any linked information
+Loads a style document and any linked information.
+
+You can test this method live using the [validator example][validator].
+
+[validator]: https://globeletjs.github.io/tile-stencil/examples/validator/index.html
 
 ### Syntax
 ```javascript
