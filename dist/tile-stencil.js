@@ -835,7 +835,7 @@ function expandSources(rawSources, token) {
       // Assign everything to a new object for return.
       // Note: shallow copy! Some properties may point back to the original
       // style document, like .vector_layers, .bounds, .center, .extent
-      const updatedSource = Object.assign({}, source, info);
+      const updatedSource = Object.assign({}, source, info, { type });
       return { [key]: updatedSource };
     });
   }
