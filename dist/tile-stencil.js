@@ -9,7 +9,7 @@ function expandSpriteURLs(url, token) {
   // Returns an array containing urls to .png and .json files
   const prefix = /^mapbox:\/\/sprites\//;
   if ( !url.match(prefix) ) return {
-    image: url + ".png", 
+    image: url + ".png",
     meta: url + ".json",
   };
 
@@ -18,7 +18,7 @@ function expandSpriteURLs(url, token) {
   url = url.replace(prefix, apiRoot) + "/sprite";
   const tokenString = "?access_token=" + token;
   return {
-    image: url + ".png" + tokenString, 
+    image: url + ".png" + tokenString,
     meta: url + ".json" + tokenString,
   };
 }
@@ -59,7 +59,7 @@ function getJSON(href) {
 function checkFetch(response) {
   if (!response.ok) {
     const { status, statusText, url } = response;
-    const message = ["HTTP", status, statusText, "for URL", url].join(" ");
+    const message = `HTTP ${status} ${statusText} for URL ${url}`;
     return Promise.reject(Error(message));
   }
 
@@ -73,8 +73,8 @@ function getImage(href) {
     img.onerror = () => reject(Error("Failed to retrieve image from " + href));
 
     img.onload = () => (img.complete && img.naturalWidth !== 0)
-        ? resolve(img)
-        : reject(Error("Incomplete image received from " + href));
+      ? resolve(img)
+      : reject(Error("Incomplete image received from " + href));
 
     img.crossOrigin = "anonymous";
     img.src = href;
@@ -485,7 +485,7 @@ function buildInterpolator(stops, base = 1) {
     let [x1, y1] = stops[iz];
 
     return interpolate(y0, scale(x0, x, x1), y1);
-  }
+  };
 }
 
 function getType(v) {
@@ -527,7 +527,7 @@ function getInterpolator(type) {
         v1.map((v, i) => v + t * (v2[i] - v));
 
     default:       // Assume step function
-      return (v1, t, v2) => v1;
+      return (v1) => v1;
   }
 }
 
@@ -561,14 +561,14 @@ function getStyleFunc(style) {
   const { type, property = "zoom", base = 1, stops } = style;
 
   const getArg = (property === "zoom")
-    ? (zoom, feature) => zoom
+    ? (zoom) => zoom
     : (zoom, feature) => feature.properties[property];
 
   const getVal = (type === "identity")
     ? convertIfColor
     : buildInterpolator(stops, base);
 
-  if (!getVal) return console.log("style: " + JSON.stringify(style) + 
+  if (!getVal) return console.log("style: " + JSON.stringify(style) +
     "\nERROR in tile-stencil: unsupported style!");
 
   const styleFunc = (zoom, feature) => getVal(getArg(zoom, feature));
@@ -738,7 +738,11 @@ const paintDefaults = {
     "heatmap-radius": 30,
     "heatmap-weight": 1,
     "heatmap-intensity": 1,
-    "heatmap-color": ["interpolate",["linear"],["heatmap-density"],0,"rgba(0, 0, 255,0)",0.1,"royalblue",0.3,"cyan",0.5,"lime",0.7,"yellow",1,"red"],
+    "heatmap-color": [
+      "interpolate", ["linear"], ["heatmap-density"],
+      0, "rgba(0, 0, 255,0)", 0.1, "royalblue", 0.3, "cyan",
+      0.5, "lime", 0.7, "yellow", 1, "red"
+    ],
     "heatmap-opacity": 1,
   },
   "hillshade": {
@@ -752,13 +756,13 @@ const paintDefaults = {
 };
 
 const refProperties = [
-  'type', 
-  'source', 
-  'source-layer', 
-  'minzoom', 
-  'maxzoom', 
-  'filter', 
-  'layout'
+  "type",
+  "source",
+  "source-layer",
+  "minzoom",
+  "maxzoom",
+  "filter",
+  "layout"
 ];
 
 function derefLayers(layers) {
@@ -778,7 +782,7 @@ function derefLayers(layers) {
   layers.forEach( layer => { map[layer.id] = layer; } );
 
   for (let i = 0; i < layers.length; i++) {
-    if ('ref' in layers[i]) {
+    if ("ref" in layers[i]) {
       layers[i] = deref(layers[i], map[layers[i].ref]);
     }
   }
@@ -790,7 +794,7 @@ function deref(layer, parent) {
   const result = {};
 
   for (const k in layer) {
-    if (k !== 'ref') {
+    if (k !== "ref") {
       result[k] = layer[k];
     }
   }
@@ -827,9 +831,9 @@ function expandSources(rawSources, token) {
     const { type, url } = source;
 
     const infoPromise =
-      (type === "geojson") ? getGeoJSON(source.data).then(data => ({ data }))
-      : (url) ? getJSON(expandTileURL(url, token)) // Get linked TileJSON
-      : Promise.resolve({}); // No linked info
+      (type === "geojson") ? getGeoJSON(source.data).then(data => ({ data })) :
+      (url) ? getJSON(expandTileURL(url, token)) : // Get linked TileJSON
+      Promise.resolve({}); // No linked info
 
     return infoPromise.then(info => {
       // Assign everything to a new object for return.
@@ -874,7 +878,7 @@ function warn(message) {
 }
 
 function buildFeatureFilter(filterObj) {
-  // filterObj is a filter definition following the "deprecated" syntax:
+  // filterObj is a filter definition following the 'deprecated' syntax:
   // https://maplibre.org/maplibre-gl-js-docs/style-spec/other/#other-filter
   if (!filterObj) return () => true;
   const [type, ...vals] = filterObj;
@@ -904,13 +908,13 @@ function getSimpleFilter(filterObj) {
 
   switch (type) {
     // Existential Filters
-    case "has": 
+    case "has":
       return d => !!getVal(d); // !! forces a Boolean return
-    case "!has": 
+    case "!has":
       return d => !getVal(d);
 
     // Comparison Filters
-    case "==": 
+    case "==":
       return d => getVal(d) === vals[0];
     case "!=":
       return d => getVal(d) !== vals[0];
@@ -977,14 +981,16 @@ function loadStyle(style, mapboxToken) {
 function checkStyle(doc) {
   const { version, sources, layers } = doc;
 
+  const noSource =
+    typeof sources !== "object" ||
+    sources === null ||
+    Array.isArray(sources);
+
   const error =
-    (typeof sources !== "object" || sources === null || Array.isArray(sources))
-    ? "missing sources object"
-    : (!Array.isArray(layers))
-    ? "missing layers array"
-    : (version !== 8)
-    ? "unsupported version number"
-    : null;
+    noSource ? "missing sources object" :
+    (!Array.isArray(layers)) ? "missing layers array" :
+    (version !== 8) ? "unsupported version number" :
+    null;
 
   return (error) ? Promise.reject(error) : doc;
 }

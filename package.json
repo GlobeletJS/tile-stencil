@@ -9,8 +9,9 @@
     "src"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --no-error-on-unmatched-pattern src examples/*/*.js",
     "build": "rollup -c build/rollup.config.js",
+    "test": "npm run lint",
     "postversion": "git push && git push --tags"
   },
   "repository": {
@@ -18,7 +19,7 @@
     "url": "git+https://github.com/GlobeletJS/tile-stencil.git"
   },
   "keywords": [
-    "Mapbox",
+    "MapLibre",
     "style",
     "parse"
   ],
@@ -30,6 +31,8 @@
   "homepage": "https://github.com/GlobeletJS/tile-stencil#readme",
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^13.0.0",
+    "eslint": "^7.30.0",
+    "eslint-config-globeletjs": "^0.0.2",
     "rollup": "^2.52.3"
   },
   "dependencies": {

@@ -73,7 +73,7 @@ export const layoutDefaults = {
   "hillshade": {
     "visibility": "visible",
   },
-}
+};
 
 export const paintDefaults = {
   "background": {
@@ -157,7 +157,11 @@ export const paintDefaults = {
     "heatmap-radius": 30,
     "heatmap-weight": 1,
     "heatmap-intensity": 1,
-    "heatmap-color": ["interpolate",["linear"],["heatmap-density"],0,"rgba(0, 0, 255,0)",0.1,"royalblue",0.3,"cyan",0.5,"lime",0.7,"yellow",1,"red"],
+    "heatmap-color": [
+      "interpolate", ["linear"], ["heatmap-density"],
+      0, "rgba(0, 0, 255,0)", 0.1, "royalblue", 0.3, "cyan",
+      0.5, "lime", 0.7, "yellow", 1, "red"
+    ],
     "heatmap-opacity": 1,
   },
   "hillshade": {
@@ -168,4 +172,4 @@ export const paintDefaults = {
     "hillshade-highlight-color": "#FFFFFF",
     "hillshade-accent-color": "#000000",
   },
-}
+};

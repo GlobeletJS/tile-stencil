@@ -30,14 +30,16 @@ export function loadStyle(style, mapboxToken) {
 function checkStyle(doc) {
   const { version, sources, layers } = doc;
 
+  const noSource =
+    typeof sources !== "object" ||
+    sources === null ||
+    Array.isArray(sources);
+
   const error =
-    (typeof sources !== "object" || sources === null || Array.isArray(sources))
-    ? "missing sources object"
-    : (!Array.isArray(layers))
-    ? "missing layers array"
-    : (version !== 8)
-    ? "unsupported version number"
-    : null;
+    noSource ? "missing sources object" :
+    (!Array.isArray(layers)) ? "missing layers array" :
+    (version !== 8) ? "unsupported version number" :
+    null;
 
   return (error) ? Promise.reject(error) : doc;
 }

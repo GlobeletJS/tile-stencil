@@ -1,5 +1,7 @@
 # tile-stencil
 
+![tests](https://github.com/GlobeletJS/tile-stencil/actions/workflows/node.js.yml/badge.svg)
+
 Load a MapLibre style document and parse it into Javascript functions
 
 [MapLibre style documents][MapLibre style] describe how a map should be drawn. 

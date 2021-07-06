@@ -25,9 +25,9 @@ function expandSources(rawSources, token) {
     const { type, url } = source;
 
     const infoPromise =
-      (type === "geojson") ? getGeoJSON(source.data).then(data => ({ data }))
-      : (url) ? getJSON(expandTileURL(url, token)) // Get linked TileJSON
-      : Promise.resolve({}); // No linked info
+      (type === "geojson") ? getGeoJSON(source.data).then(data => ({ data })) :
+      (url) ? getJSON(expandTileURL(url, token)) : // Get linked TileJSON
+      Promise.resolve({}); // No linked info
 
     return infoPromise.then(info => {
       // Assign everything to a new object for return.
@@ -61,7 +61,7 @@ function loadSprite(sprite, token) {
     .then( ([image, meta]) => ({ image, meta }) )
     .catch(err => {
       // If sprite doesn't load, just log the error and move on
-      warn("Error loading sprite: " + err.message)
+      warn("Error loading sprite: " + err.message);
     });
 }
 

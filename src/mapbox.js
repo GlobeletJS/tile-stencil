@@ -9,7 +9,7 @@ export function expandSpriteURLs(url, token) {
   // Returns an array containing urls to .png and .json files
   const prefix = /^mapbox:\/\/sprites\//;
   if ( !url.match(prefix) ) return {
-    image: url + ".png", 
+    image: url + ".png",
     meta: url + ".json",
   };
 
@@ -18,7 +18,7 @@ export function expandSpriteURLs(url, token) {
   url = url.replace(prefix, apiRoot) + "/sprite";
   const tokenString = "?access_token=" + token;
   return {
-    image: url + ".png" + tokenString, 
+    image: url + ".png" + tokenString,
     meta: url + ".json" + tokenString,
   };
 }

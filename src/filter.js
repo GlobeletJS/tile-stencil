@@ -1,5 +1,5 @@
 export function buildFeatureFilter(filterObj) {
-  // filterObj is a filter definition following the "deprecated" syntax:
+  // filterObj is a filter definition following the 'deprecated' syntax:
   // https://maplibre.org/maplibre-gl-js-docs/style-spec/other/#other-filter
   if (!filterObj) return () => true;
   const [type, ...vals] = filterObj;
@@ -29,13 +29,13 @@ function getSimpleFilter(filterObj) {
 
   switch (type) {
     // Existential Filters
-    case "has": 
+    case "has":
       return d => !!getVal(d); // !! forces a Boolean return
-    case "!has": 
+    case "!has":
       return d => !getVal(d);
 
     // Comparison Filters
-    case "==": 
+    case "==":
       return d => getVal(d) === vals[0];
     case "!=":
       return d => getVal(d) !== vals[0];

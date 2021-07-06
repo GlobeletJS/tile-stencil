@@ -30,14 +30,14 @@ function getStyleFunc(style) {
   const { type, property = "zoom", base = 1, stops } = style;
 
   const getArg = (property === "zoom")
-    ? (zoom, feature) => zoom
+    ? (zoom) => zoom
     : (zoom, feature) => feature.properties[property];
 
   const getVal = (type === "identity")
     ? convertIfColor
     : buildInterpolator(stops, base);
 
-  if (!getVal) return console.log("style: " + JSON.stringify(style) + 
+  if (!getVal) return console.log("style: " + JSON.stringify(style) +
     "\nERROR in tile-stencil: unsupported style!");
 
   const styleFunc = (zoom, feature) => getVal(getArg(zoom, feature));

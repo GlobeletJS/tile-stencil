@@ -20,7 +20,7 @@ export function getJSON(href) {
 function checkFetch(response) {
   if (!response.ok) {
     const { status, statusText, url } = response;
-    const message = ["HTTP", status, statusText, "for URL", url].join(" ");
+    const message = `HTTP ${status} ${statusText} for URL ${url}`;
     return Promise.reject(Error(message));
   }
 
@@ -34,8 +34,8 @@ export function getImage(href) {
     img.onerror = () => reject(Error("Failed to retrieve image from " + href));
 
     img.onload = () => (img.complete && img.naturalWidth !== 0)
-        ? resolve(img)
-        : reject(Error("Incomplete image received from " + href));
+      ? resolve(img)
+      : reject(Error("Incomplete image received from " + href));
 
     img.crossOrigin = "anonymous";
     img.src = href;

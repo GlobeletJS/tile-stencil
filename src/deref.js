@@ -1,11 +1,11 @@
 const refProperties = [
-  'type', 
-  'source', 
-  'source-layer', 
-  'minzoom', 
-  'maxzoom', 
-  'filter', 
-  'layout'
+  "type",
+  "source",
+  "source-layer",
+  "minzoom",
+  "maxzoom",
+  "filter",
+  "layout"
 ];
 
 export function derefLayers(layers) {
@@ -25,7 +25,7 @@ export function derefLayers(layers) {
   layers.forEach( layer => { map[layer.id] = layer; } );
 
   for (let i = 0; i < layers.length; i++) {
-    if ('ref' in layers[i]) {
+    if ("ref" in layers[i]) {
       layers[i] = deref(layers[i], map[layers[i].ref]);
     }
   }
@@ -37,7 +37,7 @@ function deref(layer, parent) {
   const result = {};
 
   for (const k in layer) {
-    if (k !== 'ref') {
+    if (k !== "ref") {
       result[k] = layer[k];
     }
   }

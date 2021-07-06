@@ -1,4 +1,4 @@
-import { color, rgb } from 'd3-color';
+import { color, rgb } from "d3-color";
 
 export function buildInterpolator(stops, base = 1) {
   if (!stops || stops.length < 2 || stops[0].length !== 2) return;
@@ -23,7 +23,7 @@ export function buildInterpolator(stops, base = 1) {
     let [x1, y1] = stops[iz];
 
     return interpolate(y0, scale(x0, x, x1), y1);
-  }
+  };
 }
 
 function getType(v) {
@@ -65,6 +65,6 @@ function getInterpolator(type) {
         v1.map((v, i) => v + t * (v2[i] - v));
 
     default:       // Assume step function
-      return (v1, t, v2) => v1;
+      return (v1) => v1;
   }
 }
