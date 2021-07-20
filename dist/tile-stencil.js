@@ -476,13 +476,13 @@ function buildInterpolator(stops, base = 1) {
   const interpolate = getInterpolator(type);
 
   return function(x) {
-    let iz = stops.findIndex(stop => stop[0] > x);
+    const iz = stops.findIndex(stop => stop[0] > x);
 
     if (iz === 0) return stops[0][1]; // x is below first stop
     if (iz < 0) return stops[izm][1]; // x is above last stop
 
-    let [x0, y0] = stops[iz - 1];
-    let [x1, y1] = stops[iz];
+    const [x0, y0] = stops[iz - 1];
+    const [x1, y1] = stops[iz];
 
     return interpolate(y0, scale(x0, x, x1), y1);
   };
@@ -495,7 +495,7 @@ function getType(v) {
 function convertIfColor(val) {
   // Convert CSS color strings to clamped RGBA arrays for WebGL
   if (!color(val)) return val;
-  let c = rgb(val);
+  const c = rgb(val);
   return [c.r / 255, c.g / 255, c.b / 255, c.opacity];
 }
 
@@ -886,15 +886,15 @@ function buildFeatureFilter(filterObj) {
   // If this is a combined filter, the vals are themselves filter definitions
   switch (type) {
     case "all": {
-      let filters = vals.map(buildFeatureFilter);  // Iteratively recursive!
+      const filters = vals.map(buildFeatureFilter);  // Iteratively recursive!
       return (d) => filters.every( filt => filt(d) );
     }
     case "any": {
-      let filters = vals.map(buildFeatureFilter);
+      const filters = vals.map(buildFeatureFilter);
       return (d) => filters.some( filt => filt(d) );
     }
     case "none": {
-      let filters = vals.map(buildFeatureFilter);
+      const filters = vals.map(buildFeatureFilter);
       return (d) => filters.every( filt => !filt(d) );
     }
     default:
@@ -944,7 +944,7 @@ function initFeatureValGetter(key) {
     case "$type":
       // NOTE: data includes MultiLineString, MultiPolygon, etc-NOT IN SPEC
       return f => {
-        let t = f.geometry.type;
+        const t = f.geometry.type;
         if (t === "MultiPoint") return "Point";
         if (t === "MultiLineString") return "LineString";
         if (t === "MultiPolygon") return "Polygon";

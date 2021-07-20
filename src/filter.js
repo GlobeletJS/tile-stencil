@@ -7,15 +7,15 @@ export function buildFeatureFilter(filterObj) {
   // If this is a combined filter, the vals are themselves filter definitions
   switch (type) {
     case "all": {
-      let filters = vals.map(buildFeatureFilter);  // Iteratively recursive!
+      const filters = vals.map(buildFeatureFilter);  // Iteratively recursive!
       return (d) => filters.every( filt => filt(d) );
     }
     case "any": {
-      let filters = vals.map(buildFeatureFilter);
+      const filters = vals.map(buildFeatureFilter);
       return (d) => filters.some( filt => filt(d) );
     }
     case "none": {
-      let filters = vals.map(buildFeatureFilter);
+      const filters = vals.map(buildFeatureFilter);
       return (d) => filters.every( filt => !filt(d) );
     }
     default:
@@ -65,7 +65,7 @@ function initFeatureValGetter(key) {
     case "$type":
       // NOTE: data includes MultiLineString, MultiPolygon, etc-NOT IN SPEC
       return f => {
-        let t = f.geometry.type;
+        const t = f.geometry.type;
         if (t === "MultiPoint") return "Point";
         if (t === "MultiLineString") return "LineString";
         if (t === "MultiPolygon") return "Polygon";
