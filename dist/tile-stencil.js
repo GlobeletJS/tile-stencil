@@ -5,12 +5,16 @@ function expandStyleURL(url, token) {
   return url.replace(prefix, apiRoot) + "?access_token=" + token;
 }
 
-function expandSpriteURLs(url, token) {
+function expandSpriteURLs(url, pixRatio, token) {
   // Returns an array containing urls to .png and .json files
+  const { min, max, floor } = Math;
+  const ratio = floor(min(max(1.0, pixRatio), 4.0));
+  const ratioStr = "@" + ratio + "x";
+
   const prefix = /^mapbox:\/\/sprites\//;
   if ( !url.match(prefix) ) return {
-    image: url + ".png",
-    meta: url + ".json",
+    image: url + ratioStr + ".png",
+    meta: url + ratioStr + ".json",
   };
 
   // We have a Mapbox custom url. Expand to an absolute URL, as per the spec
@@ -18,8 +22,8 @@ function expandSpriteURLs(url, token) {
   url = url.replace(prefix, apiRoot) + "/sprite";
   const tokenString = "?access_token=" + token;
   return {
-    image: url + ".png" + tokenString,
-    meta: url + ".json" + tokenString,
+    image: url + ratioStr + ".png" + tokenString,
+    meta: url + ratioStr + ".json" + tokenString,
   };
 }
 
@@ -861,7 +865,8 @@ function expandSources(rawSources, token) {
 function loadSprite(sprite, token) {
   if (!sprite) return;
 
-  const urls = expandSpriteURLs(sprite, token);
+  const pixRatio = window?.devicePixelRatio || 1.0;
+  const urls = expandSpriteURLs(sprite, pixRatio, token);
 
   return Promise.all([getImage(urls.image), getJSON(urls.meta)])
     .then( ([image, meta]) => ({ image, meta }) )

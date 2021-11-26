@@ -55,7 +55,8 @@ function expandSources(rawSources, token) {
 function loadSprite(sprite, token) {
   if (!sprite) return;
 
-  const urls = expandSpriteURLs(sprite, token);
+  const pixRatio = window?.devicePixelRatio || 1.0;
+  const urls = expandSpriteURLs(sprite, pixRatio, token);
 
   return Promise.all([getImage(urls.image), getJSON(urls.meta)])
     .then( ([image, meta]) => ({ image, meta }) )
