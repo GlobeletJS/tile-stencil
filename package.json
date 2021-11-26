@@ -31,9 +31,9 @@
   "homepage": "https://github.com/GlobeletJS/tile-stencil#readme",
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^13.0.0",
-    "eslint": "^7.30.0",
+    "eslint": "^8.3.0",
     "eslint-config-globeletjs": "^0.0.6",
-    "rollup": "^2.52.3"
+    "rollup": "^2.60.1"
   },
   "dependencies": {
     "d3-color": "^1.4.1"
