@@ -100,7 +100,7 @@ export const paintDefaults = {
     "line-gap-width": 0,
     "line-offset": 0,
     "line-blur": 0,
-    "line-dasharray": undefined,
+    "line-dasharray": [0, 0, 0, 0],
     "line-pattern": undefined,
     "line-gradient": undefined,
   },
