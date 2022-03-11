@@ -87,6 +87,12 @@ function getImage(href) {
   });
 }
 
+function warn(message) {
+  console.log("tile-stencil had a problem loading part of the style document");
+  console.log("  " + message);
+  console.log("  Not a fatal error. Proceeding with the rest of the style...");
+}
+
 function define(constructor, factory, prototype) {
   constructor.prototype = factory.prototype = prototype;
   prototype.constructor = constructor;
@@ -841,47 +847,28 @@ function expandSources(rawSources, token) {
       (url) ? getJSON(expandTileURL(url, token)) : // Get linked TileJSON
       Promise.resolve({}); // No linked info
 
-    return infoPromise.then(info => {
-      // Assign everything to a new object for return.
-      // Note: shallow copy! Some properties may point back to the original
-      // style document, like .vector_layers, .bounds, .center, .extent
-      const updatedSource = Object.assign({}, source, info, { type });
-      return { [key]: updatedSource };
-    });
+    return infoPromise.then(
+      val => ({ [key]: Object.assign({}, source, val, { type }) }),
+      err => (warn("sources." + key + ": " + err.message), ({}))
+    );
   }
 
-  return Promise.allSettled(expandPromises)
-    .then(results => results.reduce(processResult, {}));
-
-  function processResult(sources, result) {
-    if (result.status === "fulfilled") {
-      return Object.assign(sources, result.value);
-    } else {
-      // If one source fails to load, just log the reason and move on
-      warn("Error loading sources: " + result.reason.message);
-      return sources;
-    }
-  }
+  return Promise.all(expandPromises).then(results => {
+    return results.reduce((a, c) => Object.assign(a, c), {});
+  });
 }
 
 function loadSprite(sprite, token) {
   if (!sprite) return;
 
-  const pixRatio = window?.devicePixelRatio || 1.0;
+  const notWorker = (window && window.devicePixelRatio);
+  const pixRatio = (notWorker) ? window.devicePixelRatio : 1.0;
   const urls = expandSpriteURLs(sprite, pixRatio, token);
 
-  return Promise.all([getImage(urls.image), getJSON(urls.meta)])
-    .then( ([image, meta]) => ({ image, meta }) )
-    .catch(err => {
-      // If sprite doesn't load, just log the error and move on
-      warn("Error loading sprite: " + err.message);
-    });
-}
-
-function warn(message) {
-  console.log("tile-stencil had a problem loading part of the style document");
-  console.log("  " + message);
-  console.log("  Not a fatal error. Proceeding with the rest of the style...");
+  return Promise.all([getImage(urls.image), getJSON(urls.meta)]).then(
+    ([image, meta]) => ({ image, meta }),
+    err => warn("sprite: " + err.message)
+  );
 }
 
 function buildFeatureFilter(filterObj) {

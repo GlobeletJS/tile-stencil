@@ -41,3 +41,9 @@ export function getImage(href) {
     img.src = href;
   });
 }
+
+export function warn(message) {
+  console.log("tile-stencil had a problem loading part of the style document");
+  console.log("  " + message);
+  console.log("  Not a fatal error. Proceeding with the rest of the style...");
+}
