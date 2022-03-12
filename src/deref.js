@@ -1,51 +1,21 @@
-const refProperties = [
-  "type",
-  "source",
-  "source-layer",
-  "minzoom",
-  "maxzoom",
-  "filter",
-  "layout"
-];
+const refProperties = ["type", "minzoom", "maxzoom",
+  "source", "source-layer", "filter", "layout"];
 
 export function derefLayers(layers) {
-  // From mapbox-gl-js, style-spec/deref.js
-  /**
-   * Given an array of layers, some of which may contain `ref` properties
-   * whose value is the `id` of another property, return a new array where
-   * such layers have been augmented with the 'type', 'source', etc. properties
-   * from the parent layer, and the `ref` property has been removed.
-   *
-   * The input is not modified. The output may contain references to portions
-   * of the input.
-   */
-  layers = layers.slice(); // ??? What are we trying to achieve here?
+  // Some layers in Mapbox styles contain a non-standard "ref" property,
+  // pointing to the "id" of another layer.
+  // Augment these layers with properties from the referenced layer
 
-  const map = Object.create(null); // stackoverflow.com/a/21079232/10082269
-  layers.forEach( layer => { map[layer.id] = layer; } );
-
-  for (let i = 0; i < layers.length; i++) {
-    if ("ref" in layers[i]) {
-      layers[i] = deref(layers[i], map[layers[i].ref]);
-    }
-  }
-
-  return layers;
+  const map = layers.reduce((m, l) => (m[l.id] = l, m), {});
+  return layers.map(l => ("ref" in l) ? deref(l, map[l.ref]) : l);
 }
 
 function deref(layer, parent) {
-  const result = {};
+  const result = Object.assign({}, layer);
+  delete result.ref;
 
-  for (const k in layer) {
-    if (k !== "ref") {
-      result[k] = layer[k];
-    }
-  }
-
-  refProperties.forEach((k) => {
-    if (k in parent) {
-      result[k] = parent[k];
-    }
+  refProperties.forEach(k => {
+    if (k in parent) result[k] = parent[k];
   });
 
   return result;
