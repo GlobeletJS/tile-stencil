@@ -36,6 +36,6 @@
     "rollup": "^2.70.1"
   },
   "dependencies": {
-    "d3-color": "^3.0.1"
+    "d3-color": "3.0.1"
   }
 }
